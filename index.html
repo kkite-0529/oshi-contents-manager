@@ -4,806 +4,826 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>コンテンツ管理</title>
-    <!-- Tailwind CSS CDN -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome Icons CDN -->
+    <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts Inter -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script>
         tailwind.config = {
             theme: {
                 extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    },
                     colors: {
-                        brand: {
-                            50: '#f0f9ff',
-                            100: '#e0f2fe',
-                            500: '#0284c7',
-                            600: '#0369a1',
-                            700: '#075985',
-                        }
+                        brand: { 50: '#f8fafc', 100: '#f1f5f9', 600: '#475569', 700: '#334155' }
                     }
                 }
             }
         }
     </script>
     <style>
-        body { font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
-        .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        .calendar-grid {
-            display: grid;
-            grid-template-columns: repeat(7, minmax(0, 1fr));
-        }
+        body { background-color: #f8fafc; color: #1e293b; font-family: system-ui, -apple-system, sans-serif; }
+        .category-badge-tv { background-color: #dbeafe; color: #1d4ed8; }
+        .category-badge-radio { background-color: #dcfce7; color: #15803d; }
+        .category-badge-web { background-color: #f3e8ff; color: #7e22ce; }
+        .category-badge-magazine { background-color: #ffedd5; color: #c2410c; }
+        .category-badge-live { background-color: #ffe4e6; color: #e11d48; }
+        .category-badge-event { background-color: #fce7f3; color: #be185d; }
+        .category-badge-lottery { background-color: #ccfbf1; color: #0f766e; }
+        .category-badge-other { background-color: #f1f5f9; color: #475569; }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col">
+<body class="min-h-screen pb-20">
 
-    <!-- Top Header -->
-    <header class="bg-white/90 backdrop-blur-md sticky top-0 z-30 border-b border-slate-200 shadow-sm">
-        <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-            <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-500 flex items-center justify-center text-white font-bold text-xl shadow-md">
-                    ✨
-                </div>
-                <div>
-                    <h1 class="text-lg font-bold text-slate-800 leading-tight">コンテンツ管理</h1>
-                    <p class="text-xs text-slate-500">推し活 Schedule & Completion Manager</p>
-                </div>
+    <!-- ヘッダー -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-xs">
+        <div class="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
+            <h1 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                <i class="fa-solid fa-clapperboard text-indigo-600"></i> コンテンツ管理
+            </h1>
+            <div class="flex items-center gap-2">
+                <button onclick="openModal()" class="bg-indigo-600 text-white px-3.5 py-1.5 rounded-full text-xs font-semibold hover:bg-indigo-700 shadow-sm transition active:scale-95 flex items-center gap-1">
+                    <i class="fa-solid fa-plus"></i> 新規・定例追加
+                </button>
             </div>
-            <button onclick="openModal()" class="bg-sky-600 hover:bg-sky-700 text-white px-4 py-2 rounded-xl text-sm font-semibold shadow-sm hover:shadow transition flex items-center space-x-2">
-                <i class="fa-solid fa-plus font-bold"></i>
-                <span class="hidden sm:inline">新規登録</span>
-            </button>
         </div>
-
-        <!-- Navigation Tabs -->
-        <div class="max-w-6xl mx-auto px-2 flex space-x-1 border-t border-slate-100 overflow-x-auto hide-scrollbar">
-            <button onclick="switchTab('list')" id="tab-list" class="nav-tab px-4 py-2.5 text-sm font-medium border-b-2 border-sky-600 text-sky-600 whitespace-nowrap flex items-center space-x-2 transition">
-                <span>📋</span> <span>リスト一覧</span>
+        <!-- ナビゲーションタブ -->
+        <div class="max-w-2xl mx-auto px-4 flex border-t border-slate-100 overflow-x-auto">
+            <button onclick="switchView('list')" id="nav-list" class="flex-1 py-2.5 text-xs font-semibold text-center border-b-2 border-indigo-600 text-indigo-600 whitespace-nowrap px-3">
+                <i class="fa-solid fa-list-ul mr-1"></i> リスト一覧
             </button>
-            <button onclick="switchTab('month')" id="tab-month" class="nav-tab px-4 py-2.5 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap flex items-center space-x-2 transition">
-                <span>📅</span> <span>月表示カレンダー</span>
+            <button onclick="switchView('month')" id="nav-month" class="flex-1 py-2.5 text-xs font-semibold text-center border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap px-3">
+                <i class="fa-solid fa-calendar-days mr-1"></i> 月別カレンダー
             </button>
-            <button onclick="switchTab('week')" id="tab-week" class="nav-tab px-4 py-2.5 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap flex items-center space-x-2 transition">
-                <span>🗓️</span> <span>週表示カレンダー</span>
+            <button onclick="switchView('week')" id="nav-week" class="flex-1 py-2.5 text-xs font-semibold text-center border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap px-3">
+                <i class="fa-solid fa-calendar-week mr-1"></i> 週別カレンダー
             </button>
-            <button onclick="switchTab('deadline')" id="tab-deadline" class="nav-tab px-4 py-2.5 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap flex items-center space-x-2 transition">
-                <span>⏰</span> <span>締め切り一覧</span>
+            <button onclick="switchView('deadline')" id="nav-deadline" class="flex-1 py-2.5 text-xs font-semibold text-center border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap px-3">
+                <i class="fa-solid fa-clock mr-1"></i> 締め切り一覧
             </button>
         </div>
     </header>
 
-    <!-- Global Controls Bar (Filters & Search) -->
-    <section class="bg-white border-b border-slate-200 px-4 py-3 shadow-2xs">
-        <div class="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-3">
-            <!-- Filter Options Left -->
-            <div class="flex flex-wrap items-center gap-2">
-                <!-- Incomplete Only Toggle Button (DEFAULT: ON) -->
-                <button id="incomplete-filter-btn" onclick="toggleIncompleteFilter()" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-1.5 transition border bg-amber-50 text-amber-700 border-amber-300 shadow-2xs">
-                    <i id="incomplete-filter-icon" class="fa-solid fa-square-check"></i>
-                    <span>未対応のみ</span>
-                </button>
-
-                <!-- Category Filter -->
-                <select id="category-filter" onchange="renderCurrentView()" class="bg-slate-100 border border-slate-200 rounded-lg text-xs px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-sky-500 text-slate-700">
-                    <option value="ALL">全てのカテゴリ</option>
-                    <option value="テレビ">📺 テレビ</option>
-                    <option value="ラジオ">📻 ラジオ</option>
-                    <option value="Web動画">▶️ Web動画</option>
-                    <option value="雑誌">📖 雑誌</option>
-                    <option value="イベント">🎤 イベント</option>
-                    <option value="抽選・応募">🎯 抽選・応募</option>
-                    <option value="その他">📌 その他</option>
+    <!-- メインコンテンツ -->
+    <main class="max-w-2xl mx-auto px-4 py-4">
+        
+        <!-- コントロールバー（フィルター＆未対応のみボタン） -->
+        <div class="bg-white p-3 rounded-2xl shadow-xs border border-slate-200 mb-4 flex flex-col gap-3">
+            <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center gap-1.5">
+                    <button id="uncompleted-btn" onclick="toggleUncompletedFilter()" class="bg-indigo-600 text-white text-xs px-3 py-1.5 rounded-xl font-semibold transition flex items-center gap-1.5 shadow-xs">
+                        <i class="fa-solid fa-check-square"></i> 未対応のみ表示 (ON)
+                    </button>
+                </div>
+                <div class="text-xs font-medium text-slate-500" id="total-count">0件表示</div>
+            </div>
+            
+            <div class="flex flex-wrap gap-2 pt-1 border-t border-slate-100">
+                <select id="filter-category" onchange="renderApp()" class="text-xs bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-slate-700 outline-none focus:border-indigo-500 font-medium">
+                    <option value="">全カテゴリ</option>
+                    <option value="tv">テレビ</option>
+                    <option value="radio">ラジオ</option>
+                    <option value="web">Web動画</option>
+                    <option value="magazine">雑誌</option>
+                    <option value="live">ライブ</option>
+                    <option value="event">イベント</option>
+                    <option value="lottery">抽選・応募</option>
+                    <option value="other">その他</option>
                 </select>
-
-                <!-- Member Tag Filter -->
-                <select id="tag-filter" onchange="renderCurrentView()" class="bg-slate-100 border border-slate-200 rounded-lg text-xs px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-sky-500 text-slate-700">
-                    <option value="ALL">全てのメンバー</option>
-                </select>
-            </div>
-
-            <!-- Search Right -->
-            <div class="relative w-full sm:w-auto sm:min-w-[200px]">
-                <input type="text" id="search-input" oninput="renderCurrentView()" placeholder="タイトル・メモを検索..." class="w-full bg-slate-100 border border-slate-200 rounded-lg text-xs pl-8 pr-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-sky-500">
-                <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-2.5 text-xs text-slate-400"></i>
+                <input type="text" id="filter-keyword" oninput="renderApp()" placeholder="キーワード・日付検索..." class="text-xs bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 flex-1 text-slate-700 outline-none focus:border-indigo-500">
             </div>
         </div>
-    </section>
 
-    <!-- Main Content Area -->
-    <main class="max-w-6xl w-full mx-auto p-4 flex-grow">
-        <!-- View: List -->
-        <div id="view-list" class="view-panel space-y-3"></div>
-
-        <!-- View: Month Calendar -->
-        <div id="view-month" class="view-panel hidden bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
-            <div class="flex items-center justify-between mb-4">
-                <button onclick="changeMonth(-1)" class="p-2 hover:bg-slate-100 rounded-lg text-slate-600 transition"><i class="fa-solid fa-chevron-left"></i></button>
-                <h2 id="month-title" class="text-base font-bold text-slate-800"></h2>
-                <button onclick="changeMonth(1)" class="p-2 hover:bg-slate-100 rounded-lg text-slate-600 transition"><i class="fa-solid fa-chevron-right"></i></button>
-            </div>
-            <div class="calendar-grid text-center font-bold text-xs text-slate-400 mb-2">
-                <div class="text-red-500">日</div><div>月</div><div>火</div><div>水</div><div>木</div><div>金</div><div class="text-sky-500">土</div>
-            </div>
-            <div id="month-grid" class="calendar-grid border-t border-l border-slate-100 text-xs"></div>
-        </div>
-
-        <!-- View: Week Calendar -->
-        <div id="view-week" class="view-panel hidden bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
-            <div class="flex items-center justify-between mb-4">
-                <button onclick="changeWeek(-1)" class="p-2 hover:bg-slate-100 rounded-lg text-slate-600 transition"><i class="fa-solid fa-chevron-left"></i></button>
-                <h2 id="week-title" class="text-base font-bold text-slate-800"></h2>
-                <button onclick="changeWeek(1)" class="p-2 hover:bg-slate-100 rounded-lg text-slate-600 transition"><i class="fa-solid fa-chevron-right"></i></button>
-            </div>
-            <div id="week-grid" class="grid grid-cols-1 md:grid-cols-7 gap-3"></div>
-        </div>
-
-        <!-- View: Deadlines -->
-        <div id="view-deadline" class="view-panel hidden space-y-3"></div>
+        <!-- 各ビューのコンテナ -->
+        <div id="view-container"></div>
     </main>
 
-    <!-- Modal Form (Add / Edit) -->
-    <div id="modal-backdrop" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-lg max-h-[90vh] overflow-y-auto p-6 space-y-4">
-            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 id="modal-title" class="text-lg font-bold text-slate-800">新規コンテンツ登録</h3>
-                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+    <!-- 登録・編集モーダル -->
+    <div id="item-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-xl border border-slate-100">
+            <div class="p-4 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white z-10">
+                <h2 id="modal-title" class="font-bold text-slate-800 text-base">新規コンテンツ追加</h2>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            
+            <!-- 登録モード切り替えタブ -->
+            <div id="registration-mode-tabs" class="flex border-b border-slate-100 bg-slate-50 px-4 pt-2 gap-2">
+                <button type="button" onclick="switchRegMode('single')" id="reg-tab-single" class="px-4 py-2 text-xs font-semibold bg-white border-t border-x border-slate-200 rounded-t-lg text-indigo-600">通常登録</button>
+                <button type="button" onclick="switchRegMode('series')" id="reg-tab-series" class="px-4 py-2 text-xs font-semibold text-slate-500 hover:text-slate-700">定例一括登録（毎週・毎月）</button>
             </div>
 
-            <form id="item-form" onsubmit="saveItem(event)" class="space-y-4">
-                <input type="hidden" id="form-id">
+            <form id="item-form" onsubmit="saveItem(event)" class="p-4 space-y-4">
+                <input type="hidden" id="edit-id">
+                <input type="hidden" id="edit-series-id">
 
-                <!-- Title (Mandatory) -->
+                <!-- タイトル -->
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">タイトル・名前 <span class="text-red-500">*</span></label>
-                    <input type="text" id="form-title" required placeholder="例: 乃木坂工事中, 雑誌〇〇 5月号" class="w-full bg-slate-50 border border-slate-200 rounded-xl text-sm px-3 py-2 focus:ring-2 focus:ring-sky-500 focus:bg-white outline-none">
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">タイトル・名前 <span class="text-rose-500">*</span></label>
+                    <input type="text" id="form-title" required placeholder="例: 乃木坂工事中 / 沈黙の金曜日" class="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 outline-none focus:border-indigo-500 focus:bg-white">
                 </div>
 
-                <!-- Category & Member Tag -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">カテゴリ</label>
-                        <select id="form-category" onchange="toggleCategoryFields()" class="w-full bg-slate-50 border border-slate-200 rounded-xl text-sm px-3 py-2 focus:ring-2 focus:ring-sky-500 outline-none">
-                            <option value="テレビ">📺 テレビ</option>
-                            <option value="ラジオ">📻 ラジオ</option>
-                            <option value="Web動画">▶️ Web動画</option>
-                            <option value="雑誌">📖 雑誌</option>
-                            <option value="イベント">🎤 イベント</option>
-                            <option value="抽選・応募">🎯 抽選・応募</option>
-                            <option value="その他">📌 その他</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">出演メンバー (カンマまたはスペース区切り)</label>
-                        <input type="text" id="form-tags" placeholder="例: #弓木奈於 #山下美月" class="w-full bg-slate-50 border border-slate-200 rounded-xl text-sm px-3 py-2 focus:ring-2 focus:ring-sky-500 outline-none">
-                    </div>
+                <!-- カテゴリ -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">カテゴリ</label>
+                    <select id="form-category" onchange="toggleCategoryFields()" class="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 outline-none focus:border-indigo-500 focus:bg-white font-medium">
+                        <option value="tv">📺 テレビ</option>
+                        <option value="radio">📻 ラジオ</option>
+                        <option value="web">▶️ Web動画</option>
+                        <option value="magazine">📖 雑誌</option>
+                        <option value="live">🎤 ライブ</option>
+                        <option value="event">🎪 イベント</option>
+                        <option value="lottery">🎯 抽選・応募</option>
+                        <option value="other">📌 その他</option>
+                    </select>
                 </div>
 
-                <!-- Standard Date Times -->
-                <div id="standard-datetime-fields" class="space-y-3 bg-slate-50 p-3 rounded-xl border border-slate-100">
-                    <p class="text-xs font-bold text-slate-600">日時設定 (任意)</p>
-                    
-                    <!-- Start Date & Time -->
-                    <div class="space-y-1">
-                        <label class="text-xs text-slate-500">開始 (放送日・公開日・発売日)</label>
-                        <div class="grid grid-cols-3 gap-2">
-                            <input type="date" id="form-start-date" class="col-span-1 bg-white border border-slate-200 rounded-lg text-xs px-2 py-1.5">
-                            <select id="form-start-hour" class="bg-white border border-slate-200 rounded-lg text-xs px-1 py-1.5"></select>
-                            <select id="form-start-min" class="bg-white border border-slate-200 rounded-lg text-xs px-1 py-1.5"></select>
+                <!-- 出演メンバー -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">出演メンバー・タグ</label>
+                    <input type="text" id="form-members" placeholder="例: #弓木奈於" class="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 outline-none focus:border-indigo-500 focus:bg-white">
+                </div>
+
+                <!-- 通常登録用：開始＆終了日時 -->
+                <div id="section-single-dates" class="space-y-3 pt-2 border-t border-slate-100">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">開始日時</label>
+                        <div class="flex gap-2">
+                            <input type="date" id="form-start-date" class="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 outline-none flex-1">
+                            <select id="form-start-hour" class="text-xs bg-slate-50 border border-slate-200 rounded-xl px-2 py-2 text-slate-800 outline-none"><option value="">時</option></select>
+                            <select id="form-start-minute" class="text-xs bg-slate-50 border border-slate-200 rounded-xl px-2 py-2 text-slate-800 outline-none"><option value="">分</option></select>
                         </div>
                     </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">終了日時</label>
+                        <div class="flex gap-2">
+                            <input type="date" id="form-end-date" class="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 outline-none flex-1">
+                            <select id="form-end-hour" class="text-xs bg-slate-50 border border-slate-200 rounded-xl px-2 py-2 text-slate-800 outline-none"><option value="">時</option></select>
+                            <select id="form-end-minute" class="text-xs bg-slate-50 border border-slate-200 rounded-xl px-2 py-2 text-slate-800 outline-none"><option value="">分</option></select>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 pt-1">
+                        <input type="checkbox" id="form-is-deadline" class="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500">
+                        <label for="form-is-deadline" class="text-xs font-semibold text-slate-700">⚠️ 締め切りとして登録（締め切り一覧に抽出）</label>
+                    </div>
+                </div>
 
-                    <!-- End Date & Time -->
-                    <div class="space-y-1">
-                        <label class="text-xs text-slate-500">終了 (番組終了・配信終了・締め切り)</label>
-                        <div class="grid grid-cols-3 gap-2">
-                            <input type="date" id="form-end-date" class="col-span-1 bg-white border border-slate-200 rounded-lg text-xs px-2 py-1.5">
-                            <select id="form-end-hour" class="bg-white border border-slate-200 rounded-lg text-xs px-1 py-1.5"></select>
-                            <select id="form-end-min" class="bg-white border border-slate-200 rounded-lg text-xs px-1 py-1.5"></select>
+                <!-- 定例一括登録用フィールド -->
+                <div id="section-series-options" class="space-y-3 pt-2 border-t border-slate-100 hidden">
+                    <div class="bg-indigo-50/70 p-3 rounded-xl border border-indigo-100 text-xs text-indigo-900 space-y-2">
+                        <div class="font-bold">定例一括生成設定</div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block font-semibold mb-1">繰り返し頻度</label>
+                                <select id="series-freq" class="w-full text-xs bg-white border border-indigo-200 rounded-lg p-1.5 outline-none">
+                                    <option value="weekly">毎週 (曜日指定)</option>
+                                    <option value="monthly">毎月 (日付指定)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block font-semibold mb-1">対象曜日</label>
+                                <select id="series-day" class="w-full text-xs bg-white border border-indigo-200 rounded-lg p-1.5 outline-none">
+                                    <option value="1">毎週月曜日</option>
+                                    <option value="2">毎週火曜日</option>
+                                    <option value="3">毎週水曜日</option>
+                                    <option value="4">毎週木曜日</option>
+                                    <option value="5">毎週金曜日</option>
+                                    <option value="6">毎週土曜日</option>
+                                    <option value="0">毎週日曜日</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 pt-1">
+                            <div>
+                                <label class="block font-semibold mb-1">開始日</label>
+                                <input type="date" id="series-start-date" class="w-full text-xs bg-white border border-indigo-200 rounded-lg p-1.5 outline-none">
+                            </div>
+                            <div>
+                                <label class="block font-semibold mb-1">生成回数</label>
+                                <input type="number" id="series-count" value="4" min="1" max="52" class="w-full text-xs bg-white border border-indigo-200 rounded-lg p-1.5 outline-none">
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Deadline Checkbox -->
-                <div class="flex items-center space-x-2 pt-1">
-                    <input type="checkbox" id="form-is-deadline" class="w-4 h-4 text-sky-600 rounded border-slate-300 focus:ring-sky-500">
-                    <label for="form-is-deadline" class="text-xs font-bold text-slate-700">⚠️ 締め切りとして登録 (締め切り一覧に強調表示)</label>
-                </div>
-
-                <!-- Lottery Specific Fields -->
-                <div id="lottery-fields" class="hidden space-y-3 bg-emerald-50/60 p-3 rounded-xl border border-emerald-100">
-                    <p class="text-xs font-bold text-emerald-800">🎯 抽選・応募専用設定</p>
+                <!-- 抽選・応募専用フィールド -->
+                <div id="section-lottery-fields" class="space-y-3 pt-2 border-t border-slate-100 hidden bg-emerald-50/50 p-3 rounded-xl border border-emerald-100">
+                    <div class="text-xs font-bold text-emerald-800 flex items-center gap-1"><i class="fa-solid fa-ticket"></i> 抽選・応募スケジュール詳細</div>
                     <div>
-                        <label class="text-xs text-slate-600 block mb-1">応募開始日時</label>
-                        <input type="datetime-local" id="form-apply-start" class="w-full bg-white border border-slate-200 rounded-lg text-xs p-2">
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">応募開始日時</label>
+                        <input type="datetime-local" id="form-apply-start" class="w-full text-xs bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-800 outline-none">
                     </div>
                     <div>
-                        <label class="text-xs text-slate-600 block mb-1">応募締め切り日時</label>
-                        <input type="datetime-local" id="form-apply-deadline" class="w-full bg-white border border-slate-200 rounded-lg text-xs p-2">
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">応募締め切り日時</label>
+                        <input type="datetime-local" id="form-apply-deadline" class="w-full text-xs bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-800 outline-none">
                     </div>
                     <div>
-                        <label class="text-xs text-slate-600 block mb-1">当落発表日時</label>
-                        <input type="datetime-local" id="form-apply-result" class="w-full bg-white border border-slate-200 rounded-lg text-xs p-2">
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">当落発表日時</label>
+                        <input type="datetime-local" id="form-result-date" class="w-full text-xs bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-800 outline-none">
                     </div>
                 </div>
 
-                <!-- External URL -->
+                <!-- リンクURL -->
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">外部リンク URL (TVer, radiko, 公式サイトなど)</label>
-                    <input type="url" id="form-url" placeholder="https://..." class="w-full bg-slate-50 border border-slate-200 rounded-xl text-sm px-3 py-2 focus:ring-2 focus:ring-sky-500 outline-none">
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">外部リンクURL (TVer, 応募フォーム等)</label>
+                    <input type="url" id="form-url" placeholder="https://..." class="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 outline-none focus:border-indigo-500 focus:bg-white">
                 </div>
 
-                <!-- Notes -->
+                <!-- メモ -->
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">メモ・タイムスタンプ・感想</label>
-                    <textarea id="form-notes" rows="3" placeholder="例: 14:20〜 トーク見どころ, 応募番号 #123456" class="w-full bg-slate-50 border border-slate-200 rounded-xl text-sm px-3 py-2 focus:ring-2 focus:ring-sky-500 outline-none"></textarea>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">メモ・感想・タイムスタンプ</label>
+                    <textarea id="form-memo" rows="2" placeholder="例: 15:20〜のトークが最高だった" class="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 outline-none focus:border-indigo-500 focus:bg-white"></textarea>
                 </div>
 
-                <!-- Modal Actions -->
-                <div class="flex items-center justify-end space-x-2 border-t border-slate-100 pt-3">
-                    <button type="button" onclick="closeModal()" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-500 hover:bg-slate-100">キャンセル</button>
-                    <button type="submit" class="px-5 py-2 rounded-xl text-xs font-semibold bg-sky-600 hover:bg-sky-700 text-white shadow-sm">保存する</button>
+                <!-- 保存ボタン -->
+                <div class="pt-2">
+                    <button type="submit" class="w-full bg-indigo-600 text-white py-2.5 rounded-xl text-sm font-semibold hover:bg-indigo-700 shadow-sm transition">
+                        保存する
+                    </button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Application Script -->
+    <!-- シリーズ一括/個別編集確認モーダル -->
+    <div id="series-edit-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-xl border border-slate-100 text-center space-y-4">
+            <div class="text-indigo-600 text-3xl"><i class="fa-solid fa-layer-group"></i></div>
+            <h3 class="font-bold text-slate-800 text-base">定例シリーズの編集</h3>
+            <p class="text-xs text-slate-600">このアイテムは定例シリーズに含まれています。どのように更新しますか？</p>
+            <div class="space-y-2 pt-2">
+                <button onclick="confirmSeriesEdit('single')" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs py-2.5 rounded-xl font-medium transition">
+                    この予定のみ個別編集する
+                </button>
+                <button onclick="confirmSeriesEdit('all')" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs py-2.5 rounded-xl font-medium transition">
+                    シリーズ全体を一括更新する
+                </button>
+                <button onclick="closeSeriesEditModal()" class="w-full text-slate-400 hover:text-slate-600 text-xs py-2">
+                    キャンセル
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        // Data State
+        // アプリの状態
+        let currentView = 'list';
+        let filterUncompletedOnly = true;
+        let regMode = 'single';
+        let pendingItemData = null;
+
+        // カテゴリ定義
+        const categoryMeta = {
+            tv: { label: 'テレビ', badge: 'category-badge-tv', icon: 'fa-tv' },
+            radio: { label: 'ラジオ', badge: 'category-badge-radio', icon: 'fa-headphones' },
+            web: { label: 'Web動画', badge: 'category-badge-web', icon: 'fa-video' },
+            magazine: { label: '雑誌', badge: 'category-badge-magazine', icon: 'fa-book-open' },
+            live: { label: 'ライブ', badge: 'category-badge-live', icon: 'fa-microphone-lines' },
+            event: { label: 'イベント', badge: 'category-badge-event', icon: 'fa-calendar-star' },
+            lottery: { label: '抽選・応募', badge: 'category-badge-lottery', icon: 'fa-ticket' },
+            other: { label: 'その他', badge: 'category-badge-other', icon: 'fa-tag' }
+        };
+
+        // ステータス定義
+        const statuses = {
+            tv: ['未視聴', '録画済', '視聴済'],
+            radio: ['未視聴', '録画済', '視聴済'],
+            web: ['未視聴', '視聴済'],
+            magazine: ['未購入', '購入済', '読了'],
+            live: ['未参加', 'チケット確保済', '参加済'],
+            event: ['未参加', 'チケット確保済', '参加済'],
+            lottery: ['未応募', '応募完了', '当落待ち', '当選', '落選'],
+            other: ['未対応', '対応完了']
+        };
+
+        // 初期サンプルデータ
         let items = [
             {
                 id: '1',
-                title: '乃木坂工事中放送',
-                category: 'テレビ',
-                tags: ['#弓木奈於', '#乃木坂46'],
-                startDate: '2026-10-18',
-                startHour: '00',
-                startMin: '00',
-                endDate: '2026-10-18',
-                endHour: '00',
-                endMin: '30',
-                status: '未視聴',
+                seriesId: 'series_1',
+                title: '沈黙の金曜日',
+                category: 'radio',
+                members: '#弓木奈於',
+                startDate: '2026-10-23', startHour: '21', startMinute: '00',
+                endDate: '2026-10-23', endHour: '23', endMinute: '00',
                 isDeadline: false,
-                url: 'https://tver.jp',
-                notes: '見逃し配信チェック必須'
+                status: '未視聴',
+                url: 'https://radiko.jp/',
+                memo: '金曜夜の生放送！'
             },
             {
                 id: '2',
-                title: '沈黙の金曜日 (FM FUJI)',
-                category: 'ラジオ',
-                tags: ['#弓木奈於'],
-                startDate: '2026-10-23',
-                startHour: '21',
-                startMin: '00',
-                endDate: '2026-10-23',
-                endHour: '23',
-                endMin: '00',
-                status: '未視聴',
+                title: '乃木坂工事中',
+                category: 'tv',
+                members: '#弓木奈於',
+                startDate: '2026-10-25', startHour: '00', startMinute: '00',
+                endDate: '2026-10-25', endHour: '00', endMinute: '30',
                 isDeadline: false,
-                url: 'https://radiko.jp',
-                notes: 'タイムシフトで回収予定'
+                status: '録画済',
+                url: '',
+                memo: 'TVerで配信予定あり'
             },
             {
                 id: '3',
-                title: '秋の全国ツアーチケット1次抽選応募',
-                category: '抽選・応募',
-                tags: ['#乃木坂46'],
-                startDate: '',
-                startHour: '',
-                startMin: '',
-                endDate: '',
-                endHour: '',
-                endMin: '',
-                applyStart: '2026-10-19T10:00',
-                applyDeadline: '2026-10-25T23:59',
-                applyResult: '2026-10-28T15:00',
-                status: '未応募',
+                title: '全国ツアー ライブチケット応募',
+                category: 'lottery',
+                members: '#弓木奈於',
+                startDate: '', startHour: '', startMinute: '',
+                endDate: '', endHour: '', endMinute: '',
                 isDeadline: true,
-                url: 'https://eplus.jp',
-                notes: '千秋楽公演狙い'
-            },
-            {
-                id: '4',
-                title: 'アイドル誌 11月号特集インタビュー',
-                category: '雑誌',
-                tags: ['#弓木奈於'],
-                startDate: '2026-10-22',
-                startHour: '',
-                startMin: '',
-                endDate: '',
-                endHour: '',
-                endMin: '',
-                status: '未購入',
-                isDeadline: false,
-                url: '',
-                notes: '巻頭グラビア8ページ掲載'
+                applyStart: '2026-10-20T12:00',
+                applyDeadline: '2026-10-28T23:59',
+                resultDate: '2026-11-02T15:00',
+                status: '未応募',
+                url: 'https://example.com',
+                memo: '忘れずに応募する'
             }
         ];
 
-        let currentTab = 'list';
-        let showIncompleteOnly = true; // Default ON
-        let currentDate = new Date(2026, 9, 17); // Fixed context date: Oct 17, 2026
-
-        // Category Colors Setup
-        const categoryMeta = {
-            'テレビ': { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200', barBg: 'bg-blue-500' },
-            'ラジオ': { bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-200', barBg: 'bg-green-500' },
-            'Web動画': { bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200', barBg: 'bg-purple-500' },
-            '雑誌': { bg: 'bg-orange-50', text: 'text-orange-700', border: 'border-orange-200', barBg: 'bg-orange-500' },
-            'イベント': { bg: 'bg-pink-50', text: 'text-pink-700', border: 'border-pink-200', barBg: 'bg-pink-500' },
-            '抽選・応募': { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200', barBg: 'bg-emerald-500' },
-            'その他': { bg: 'bg-slate-100', text: 'text-slate-700', border: 'border-slate-200', barBg: 'bg-slate-500' }
-        };
-
-        // Status Options per Category
-        const categoryStatuses = {
-            'テレビ': ['未視聴', '録画済', '視聴済', '保存完了'],
-            'ラジオ': ['未視聴', '録画済', '視聴済', '保存完了'],
-            'Web動画': ['未視聴', '録画済', '視聴済', '保存完了'],
-            '雑誌': ['未購入', '予約済', '購入済', '読了'],
-            'イベント': ['未参加', 'チケット確保', '参加完了'],
-            '抽選・応募': ['未応募', '応募完了', '当落待ち', '当選', '落選'],
-            'その他': ['未対応', '進行中', '完了']
-        };
-
-        const completedStatuses = ['視聴済', '保存完了', '読了', '参加完了', '当選', '落選', '完了'];
-
-        // Init App
+        // 初期化処理
         window.addEventListener('DOMContentLoaded', () => {
-            populateHourMinDropdowns();
-            populateTagFilterOptions();
-            renderCurrentView();
+            initSelects();
+            renderApp();
         });
 
-        // Dropdown Builders
-        function populateHourMinDropdowns() {
-            const startHour = document.getElementById('form-start-hour');
-            const endHour = document.getElementById('form-end-hour');
-            const startMin = document.getElementById('form-start-min');
-            const endMin = document.getElementById('form-end-min');
+        function initSelects() {
+            const hours = Array.from({length: 24}, (_, i) => String(i).padStart(2, '0'));
+            const minutes = Array.from({length: 60}, (_, i) => String(i).padStart(2, '0'));
 
-            startHour.innerHTML = '<option value="">時</option>';
-            endHour.innerHTML = '<option value="">時</option>';
-            startMin.innerHTML = '<option value="">分</option>';
-            endMin.innerHTML = '<option value="">分</option>';
-
-            for (let i = 0; i < 24; i++) {
-                const val = String(i).padStart(2, '0');
-                startHour.innerHTML += `<option value="${val}">${val}時</option>`;
-                endHour.innerHTML += `<option value="${val}">${val}時</option>`;
-            }
-            for (let i = 0; i < 60; i++) {
-                const val = String(i).padStart(2, '0');
-                startMin.innerHTML += `<option value="${val}">${val}分</option>`;
-                endMin.innerHTML += `<option value="${val}">${val}分</option>`;
-            }
-        }
-
-        function populateTagFilterOptions() {
-            const tagSelect = document.getElementById('tag-filter');
-            const tagsSet = new Set();
-            items.forEach(item => (item.tags || []).forEach(t => tagsSet.add(t)));
-            
-            tagSelect.innerHTML = '<option value="ALL">全てのメンバー</option>';
-            tagsSet.forEach(tag => {
-                tagSelect.innerHTML += `<option value="${tag}">${tag}</option>`;
+            ['form-start-hour', 'form-end-hour'].forEach(id => {
+                const el = document.getElementById(id);
+                hours.forEach(h => el.innerHTML += `<option value="${h}">${h}時</option>`);
             });
+            ['form-start-minute', 'form-end-minute'].forEach(id => {
+                const el = document.getElementById(id);
+                minutes.forEach(m => el.innerHTML += `<option value="${m}">${m}分</option>`);
+            });
+
+            const todayStr = new Date().toISOString().split('T')[0];
+            document.getElementById('series-start-date').value = todayStr;
         }
 
-        // Filter Toggle
-        function toggleIncompleteFilter() {
-            showIncompleteOnly = !showIncompleteOnly;
-            const btn = document.getElementById('incomplete-filter-btn');
-            const icon = document.getElementById('incomplete-filter-icon');
-
-            if (showIncompleteOnly) {
-                btn.className = "px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-1.5 transition border bg-amber-50 text-amber-700 border-amber-300 shadow-2xs";
-                icon.className = "fa-solid fa-square-check";
-            } else {
-                btn.className = "px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-1.5 transition border bg-slate-100 text-slate-600 border-slate-200";
-                icon.className = "fa-regular fa-square";
-            }
-            renderCurrentView();
-        }
-
-        // Filter Logic
-        function getFilteredItems() {
-            const cat = document.getElementById('category-filter').value;
-            const tag = document.getElementById('tag-filter').value;
-            const query = document.getElementById('search-input').value.toLowerCase();
-
-            return items.filter(item => {
-                if (showIncompleteOnly && completedStatuses.includes(item.status)) return false;
-                if (cat !== 'ALL' && item.category !== cat) return false;
-                if (tag !== 'ALL' && !(item.tags || []).includes(tag)) return false;
-                if (query) {
-                    const matchTitle = item.title.toLowerCase().includes(query);
-                    const matchNotes = (item.notes || '').toLowerCase().includes(query);
-                    if (!matchTitle && !matchNotes) return false;
+        function switchView(view) {
+            currentView = view;
+            ['list', 'month', 'week', 'deadline'].forEach(v => {
+                const btn = document.getElementById(`nav-${v}`);
+                if (v === view) {
+                    btn.className = "flex-1 py-2.5 text-xs font-semibold text-center border-b-2 border-indigo-600 text-indigo-600 whitespace-nowrap px-3";
+                } else {
+                    btn.className = "flex-1 py-2.5 text-xs font-semibold text-center border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap px-3";
                 }
-                return true;
             });
+            renderApp();
         }
 
-        // View Switcher
-        function switchTab(tab) {
-            currentTab = tab;
-            document.querySelectorAll('.nav-tab').forEach(el => {
-                el.className = "nav-tab px-4 py-2.5 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap flex items-center space-x-2 transition";
-            });
-            document.getElementById(`tab-${tab}`).className = "nav-tab px-4 py-2.5 text-sm font-medium border-b-2 border-sky-600 text-sky-600 whitespace-nowrap flex items-center space-x-2 transition";
-
-            document.querySelectorAll('.view-panel').forEach(p => p.classList.add('hidden'));
-            document.getElementById(`view-${tab}`).classList.remove('hidden');
-
-            renderCurrentView();
-        }
-
-        function renderCurrentView() {
-            if (currentTab === 'list') renderListView();
-            else if (currentTab === 'month') renderMonthView();
-            else if (currentTab === 'week') renderWeekView();
-            else if (currentTab === 'deadline') renderDeadlineView();
-        }
-
-        // Status Toggle Action
-        function cycleStatus(id) {
-            const item = items.find(i => i.id === id);
-            if (!item) return;
-
-            const list = categoryStatuses[item.category] || categoryStatuses['その他'];
-            const currentIndex = list.indexOf(item.status);
-            const nextIndex = (currentIndex + 1) % list.length;
-            item.status = list[nextIndex];
-
-            renderCurrentView();
-        }
-
-        // Google Calendar Link Builder
-        function getGoogleCalendarUrl(item) {
-            const title = encodeURIComponent(item.title);
-            const details = encodeURIComponent(`${item.notes || ''}\nURL: ${item.url || ''}`);
-            let datesStr = '';
-
-            if (item.category === '抽選・応募' && item.applyDeadline) {
-                const deadline = new Date(item.applyDeadline);
-                const iso = deadline.toISOString().replace(/-|:|\.\d\d\d/g, '');
-                datesStr = `${iso}/${iso}`;
-            } else if (item.startDate) {
-                const sDate = item.startDate.replace(/-/g, '');
-                const sTime = (item.startHour && item.startMin) ? `T${item.startHour}${item.startMin}00` : '';
-                const eDate = item.endDate ? item.endDate.replace(/-/g, '') : sDate;
-                const eTime = (item.endHour && item.endMin) ? `T${item.endHour}${item.endMin}00` : '';
-                datesStr = `${sDate}${sTime}/${eDate}${eTime}`;
+        function toggleUncompletedFilter() {
+            filterUncompletedOnly = !filterUncompletedOnly;
+            const btn = document.getElementById('uncompleted-btn');
+            if (filterUncompletedOnly) {
+                btn.className = "bg-indigo-600 text-white text-xs px-3 py-1.5 rounded-xl font-semibold transition flex items-center gap-1.5 shadow-xs";
+                btn.innerHTML = '<i class="fa-solid fa-check-square"></i> 未対応のみ表示 (ON)';
             } else {
-                return '#';
+                btn.className = "bg-slate-200 text-slate-700 text-xs px-3 py-1.5 rounded-xl font-semibold transition flex items-center gap-1.5 shadow-xs";
+                btn.innerHTML = '<i class="fa-solid fa-square"></i> 未対応のみ表示 (OFF)';
             }
-
-            return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}&dates=${datesStr}`;
+            renderApp();
         }
 
-        // Render List View
-        function renderListView() {
-            const container = document.getElementById('view-list');
-            const data = getFilteredItems();
+        function switchRegMode(mode) {
+            regMode = mode;
+            const tabSingle = document.getElementById('reg-tab-single');
+            const tabSeries = document.getElementById('reg-tab-series');
+            const secSingle = document.getElementById('section-single-dates');
+            const secSeries = document.getElementById('section-series-options');
 
-            if (data.length === 0) {
-                container.innerHTML = `<div class="bg-white rounded-2xl p-8 text-center text-slate-400 border border-slate-200">表示できるコンテンツがありません</div>`;
-                return;
+            if (mode === 'single') {
+                tabSingle.className = "px-4 py-2 text-xs font-semibold bg-white border-t border-x border-slate-200 rounded-t-lg text-indigo-600";
+                tabSeries.className = "px-4 py-2 text-xs font-semibold text-slate-500 hover:text-slate-700";
+                secSingle.classList.remove('hidden');
+                secSeries.classList.add('hidden');
+            } else {
+                tabSeries.className = "px-4 py-2 text-xs font-semibold bg-white border-t border-x border-slate-200 rounded-t-lg text-indigo-600";
+                tabSingle.className = "px-4 py-2 text-xs font-semibold text-slate-500 hover:text-slate-700";
+                secSeries.classList.remove('hidden');
+                secSingle.classList.add('hidden');
             }
-
-            container.innerHTML = data.map(item => {
-                const meta = categoryMeta[item.category] || categoryMeta['その他'];
-                const isCompleted = completedStatuses.includes(item.status);
-                const gcalUrl = getGoogleCalendarUrl(item);
-
-                return `
-                    <div class="bg-white rounded-2xl p-4 shadow-xs border border-slate-200 hover:border-slate-300 transition flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div class="space-y-2 flex-grow">
-                            <div class="flex flex-wrap items-center gap-2">
-                                <span class="px-2.5 py-1 rounded-lg text-xs font-bold border ${meta.bg} ${meta.text} ${meta.border}">
-                                    ${item.category}
-                                </span>
-                                ${(item.tags || []).map(t => `<span class="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">${t}</span>`).join('')}
-                                ${item.isDeadline ? `<span class="text-xs font-bold text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded-md">⚠️ 締め切り</span>` : ''}
-                            </div>
-
-                            <h3 class="text-base font-bold ${isCompleted ? 'line-through text-slate-400' : 'text-slate-800'}">${item.title}</h3>
-
-                            <!-- Time & Details -->
-                            <div class="text-xs text-slate-500 space-y-1">
-                                ${item.category === '抽選・応募' ? `
-                                    <div class="flex flex-wrap gap-x-4 gap-y-1">
-                                        ${item.applyStart ? `<span><strong class="text-slate-700">応募開始:</strong> ${item.applyStart.replace('T', ' ')}</span>` : ''}
-                                        ${item.applyDeadline ? `<span class="text-red-600 font-semibold"><strong class="text-slate-700">締め切り:</strong> ${item.applyDeadline.replace('T', ' ')}</span>` : ''}
-                                        ${item.applyResult ? `<span><strong class="text-slate-700">当落発表:</strong> ${item.applyResult.replace('T', ' ')}</span>` : ''}
-                                    </div>
-                                ` : `
-                                    <div>
-                                        <span>📅 ${item.startDate || '日付指定なし'} ${item.startHour ? `${item.startHour}:${item.startMin || '00'}` : ''}</span>
-                                        ${item.endDate ? ` <span>〜 ${item.endDate} ${item.endHour ? `${item.endHour}:${item.endMin || '00'}` : ''}</span>` : ''}
-                                    </div>
-                                `}
-                                ${item.notes ? `<p class="text-slate-600 bg-slate-50 p-2 rounded-lg text-xs">${item.notes}</p>` : ''}
-                            </div>
-                        </div>
-
-                        <!-- Action Buttons -->
-                        <div class="flex items-center justify-between sm:justify-end gap-2 border-t sm:border-t-0 border-slate-100 pt-3 sm:pt-0">
-                            <!-- Status Button -->
-                            <button onclick="cycleStatus('${item.id}')" class="px-3 py-1.5 rounded-xl text-xs font-bold border transition ${isCompleted ? 'bg-slate-100 text-slate-500 border-slate-200' : 'bg-sky-50 text-sky-700 border-sky-200 hover:bg-sky-100'}">
-                                ${item.status} <i class="fa-solid fa-rotate text-2xs ml-1"></i>
-                            </button>
-
-                            <div class="flex items-center space-x-1">
-                                ${item.url ? `<a href="${item.url}" target="_blank" class="p-2 text-slate-400 hover:text-sky-600 rounded-lg hover:bg-slate-100"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>` : ''}
-                                ${gcalUrl !== '#' ? `<a href="${gcalUrl}" target="_blank" title="Googleカレンダーに追加" class="p-2 text-slate-400 hover:text-emerald-600 rounded-lg hover:bg-slate-100"><i class="fa-solid fa-calendar-plus"></i></a>` : ''}
-                                <button onclick="editItem('${item.id}')" class="p-2 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100"><i class="fa-solid fa-pen-to-square"></i></button>
-                                <button onclick="deleteItem('${item.id}')" class="p-2 text-slate-400 hover:text-red-600 rounded-lg hover:bg-slate-100"><i class="fa-solid fa-trash-can"></i></button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        // Render Month View
-        function renderMonthView() {
-            const year = currentDate.getFullYear();
-            const month = currentDate.getMonth();
-            document.getElementById('month-title').textContent = `${year}年 ${month + 1}月`;
-
-            const firstDay = new Date(year, month, 1).getDay();
-            const daysInMonth = new Date(year, month + 1, 0).getDate();
-            const data = getFilteredItems();
-
-            const grid = document.getElementById('month-grid');
-            grid.innerHTML = '';
-
-            for (let i = 0; i < firstDay; i++) {
-                grid.innerHTML += `<div class="bg-slate-50/50 border-r border-b border-slate-100 min-h-[90px]"></div>`;
-            }
-
-            for (let d = 1; d <= daysInMonth; d++) {
-                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-                
-                // Collect badges for date
-                let cellHtml = `<div class="bg-white border-r border-b border-slate-100 p-1 min-h-[90px] flex flex-col justify-start">
-                    <span class="font-semibold text-xs text-slate-600 mb-1">${d}</span>
-                    <div class="space-y-1">`;
-
-                data.forEach(item => {
-                    const meta = categoryMeta[item.category] || categoryMeta['その他'];
-                    
-                    if (item.category === '抽選・応募') {
-                        const start = item.applyStart ? item.applyStart.split('T')[0] : null;
-                        const deadline = item.applyDeadline ? item.applyDeadline.split('T')[0] : null;
-                        const result = item.applyResult ? item.applyResult.split('T')[0] : null;
-
-                        if (result === dateStr) {
-                            cellHtml += `<div onclick="editItem('${item.id}')" class="cursor-pointer text-3xs font-bold px-1.5 py-0.5 rounded ${meta.bg} ${meta.text} border ${meta.border} truncate">【当落】${item.title}</div>`;
-                        } else if (start === dateStr) {
-                            cellHtml += `<div onclick="editItem('${item.id}')" class="cursor-pointer text-3xs font-bold px-1.5 py-0.5 rounded ${meta.bg} ${meta.text} border ${meta.border} truncate">【応募開始】${item.title}</div>`;
-                        } else if (deadline === dateStr) {
-                            cellHtml += `<div onclick="editItem('${item.id}')" class="cursor-pointer text-3xs font-bold px-1.5 py-0.5 rounded bg-red-50 text-red-700 border border-red-200 truncate">【応募締め切り】${item.title}</div>`;
-                        } else if (start && deadline && dateStr > start && dateStr < deadline) {
-                            cellHtml += `<div class="h-1.5 w-full ${meta.barBg} opacity-40 rounded-full" title="${item.title} (応募期間中)"></div>`;
-                        }
-                    } else {
-                        if (item.startDate === dateStr) {
-                            cellHtml += `<div onclick="editItem('${item.id}')" class="cursor-pointer text-3xs font-medium px-1.5 py-0.5 rounded ${meta.bg} ${meta.text} border ${meta.border} truncate">${item.title}</div>`;
-                        }
-                    }
-                });
-
-                cellHtml += `</div></div>`;
-                grid.innerHTML += cellHtml;
-            }
-        }
-
-        function changeMonth(delta) {
-            currentDate.setMonth(currentDate.getMonth() + delta);
-            renderMonthView();
-        }
-
-        // Render Week View
-        function renderWeekView() {
-            const startOfWeek = new Date(currentDate);
-            startOfWeek.setDate(currentDate.getDate() - currentDate.getDay());
-            
-            const endOfWeek = new Date(startOfWeek);
-            endOfWeek.setDate(startOfWeek.getDate() + 6);
-
-            document.getElementById('week-title').textContent = `${startOfWeek.getMonth() + 1}/${startOfWeek.getDate()} 〜 ${endOfWeek.getMonth() + 1}/${endOfWeek.getDate()}`;
-
-            const grid = document.getElementById('week-grid');
-            grid.innerHTML = '';
-            const data = getFilteredItems();
-
-            for (let i = 0; i < 7; i++) {
-                const day = new Date(startOfWeek);
-                day.setDate(startOfWeek.getDate() + i);
-                const dateStr = day.toISOString().split('T')[0];
-
-                let dayHtml = `
-                    <div class="bg-slate-50 rounded-xl p-3 border border-slate-200 min-h-[140px] flex flex-col">
-                        <div class="text-xs font-bold text-slate-600 mb-2 border-b border-slate-200 pb-1 flex justify-between">
-                            <span>${['日','月','火','水','木','金','土'][i]}</span>
-                            <span>${day.getMonth() + 1}/${day.getDate()}</span>
-                        </div>
-                        <div class="space-y-1.5 flex-grow">
-                `;
-
-                data.forEach(item => {
-                    const meta = categoryMeta[item.category] || categoryMeta['その他'];
-
-                    if (item.category === '抽選・応募') {
-                        const start = item.applyStart ? item.applyStart.split('T')[0] : null;
-                        const deadline = item.applyDeadline ? item.applyDeadline.split('T')[0] : null;
-                        const result = item.applyResult ? item.applyResult.split('T')[0] : null;
-
-                        if (result === dateStr) {
-                            dayHtml += `<div onclick="editItem('${item.id}')" class="cursor-pointer text-xs p-1.5 rounded-lg ${meta.bg} ${meta.text} border ${meta.border} font-bold">【当落】${item.title}</div>`;
-                        } else if (start === dateStr) {
-                            dayHtml += `<div onclick="editItem('${item.id}')" class="cursor-pointer text-xs p-1.5 rounded-lg ${meta.bg} ${meta.text} border ${meta.border} font-bold">【応募開始】${item.title}</div>`;
-                        } else if (deadline === dateStr) {
-                            dayHtml += `<div onclick="editItem('${item.id}')" class="cursor-pointer text-xs p-1.5 rounded-lg bg-red-50 text-red-700 border border-red-200 font-bold">【応募締め切り】${item.title}</div>`;
-                        } else if (start && deadline && dateStr > start && dateStr < deadline) {
-                            dayHtml += `<div class="h-2 w-full ${meta.barBg} opacity-40 rounded-full" title="${item.title}"></div>`;
-                        }
-                    } else {
-                        if (item.startDate === dateStr) {
-                            dayHtml += `<div onclick="editItem('${item.id}')" class="cursor-pointer text-xs p-1.5 rounded-lg ${meta.bg} ${meta.text} border ${meta.border} font-medium">${item.title}</div>`;
-                        }
-                    }
-                });
-
-                dayHtml += `</div></div>`;
-                grid.innerHTML += dayHtml;
-            }
-        }
-
-        function changeWeek(delta) {
-            currentDate.setDate(currentDate.getDate() + (delta * 7));
-            renderWeekView();
-        }
-
-        // Render Deadline View
-        function renderDeadlineView() {
-            const container = document.getElementById('view-deadline');
-            const data = getFilteredItems().filter(i => i.isDeadline || i.category === '抽選・応募');
-
-            if (data.length === 0) {
-                container.innerHTML = `<div class="bg-white rounded-2xl p-8 text-center text-slate-400 border border-slate-200">現在、締め切りとして登録されている項目はありません。</div>`;
-                return;
-            }
-
-            container.innerHTML = data.map(item => {
-                const meta = categoryMeta[item.category] || categoryMeta['その他'];
-                const isCompleted = completedStatuses.includes(item.status);
-
-                return `
-                    <div class="bg-white rounded-2xl p-4 shadow-xs border-l-4 border-l-red-500 border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                        <div class="space-y-1">
-                            <div class="flex items-center space-x-2">
-                                <span class="px-2 py-0.5 rounded text-xs font-bold ${meta.bg} ${meta.text}">${item.category}</span>
-                                <span class="text-xs font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded">⚠️ 締め切り注意</span>
-                            </div>
-                            <h3 class="font-bold text-base text-slate-800">${item.title}</h3>
-                            <p class="text-xs text-slate-500">
-                                ${item.applyDeadline ? `締め切り日時: ${item.applyDeadline.replace('T', ' ')}` : `終了日時: ${item.endDate || '未設定'}`}
-                            </p>
-                        </div>
-                        <button onclick="cycleStatus('${item.id}')" class="px-3 py-1.5 rounded-xl text-xs font-bold border ${isCompleted ? 'bg-slate-100 text-slate-500' : 'bg-red-50 text-red-700 border-red-200'}">
-                            ${item.status} <i class="fa-solid fa-rotate text-2xs ml-1"></i>
-                        </button>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        // Modal Form Handlers
-        function openModal(editId = null) {
-            document.getElementById('item-form').reset();
-            document.getElementById('form-id').value = '';
-            document.getElementById('modal-title').textContent = '新規コンテンツ登録';
-            
-            if (editId) {
-                const item = items.find(i => i.id === editId);
-                if (item) {
-                    document.getElementById('form-id').value = item.id;
-                    document.getElementById('form-title').value = item.title;
-                    document.getElementById('form-category').value = item.category;
-                    document.getElementById('form-tags').value = (item.tags || []).join(' ');
-                    document.getElementById('form-start-date').value = item.startDate || '';
-                    document.getElementById('form-start-hour').value = item.startHour || '';
-                    document.getElementById('form-start-min').value = item.startMin || '';
-                    document.getElementById('form-end-date').value = item.endDate || '';
-                    document.getElementById('form-end-hour').value = item.endHour || '';
-                    document.getElementById('form-end-min').value = item.endMin || '';
-                    document.getElementById('form-is-deadline').checked = !!item.isDeadline;
-                    document.getElementById('form-apply-start').value = item.applyStart || '';
-                    document.getElementById('form-apply-deadline').value = item.applyDeadline || '';
-                    document.getElementById('form-apply-result').value = item.applyResult || '';
-                    document.getElementById('form-url').value = item.url || '';
-                    document.getElementById('form-notes').value = item.notes || '';
-
-                    document.getElementById('modal-title').textContent = 'コンテンツの編集';
-                }
-            }
-
-            toggleCategoryFields();
-            document.getElementById('modal-backdrop').classList.remove('hidden');
-        }
-
-        function closeModal() {
-            document.getElementById('modal-backdrop').classList.add('hidden');
         }
 
         function toggleCategoryFields() {
             const cat = document.getElementById('form-category').value;
-            const lotteryFields = document.getElementById('lottery-fields');
-            if (cat === '抽選・応募') {
+            const lotteryFields = document.getElementById('section-lottery-fields');
+            if (cat === 'lottery') {
                 lotteryFields.classList.remove('hidden');
             } else {
                 lotteryFields.classList.add('hidden');
             }
         }
 
-        function saveItem(e) {
-            e.preventDefault();
-            const id = document.getElementById('form-id').value;
-            const title = document.getElementById('form-title').value;
-            const category = document.getElementById('form-category').value;
-            const tagsRaw = document.getElementById('form-tags').value;
-            const tags = tagsRaw.split(/[\s,]+/).filter(t => t.length > 0).map(t => t.startsWith('#') ? t : `#${t}`);
+        // フィルター適用後のデータ取得
+        function getFilteredItems() {
+            const catFilter = document.getElementById('filter-category').value;
+            const kwFilter = document.getElementById('filter-keyword').value.toLowerCase();
 
-            const newItem = {
-                id: id || Date.now().toString(),
-                title,
-                category,
-                tags,
-                startDate: document.getElementById('form-start-date').value,
-                startHour: document.getElementById('form-start-hour').value,
-                startMin: document.getElementById('form-start-min').value,
-                endDate: document.getElementById('form-end-date').value,
-                endHour: document.getElementById('form-end-hour').value,
-                endMin: document.getElementById('form-end-min').value,
-                isDeadline: document.getElementById('form-is-deadline').checked,
-                applyStart: document.getElementById('form-apply-start').value,
-                applyDeadline: document.getElementById('form-apply-deadline').value,
-                applyResult: document.getElementById('form-apply-result').value,
-                url: document.getElementById('form-url').value,
-                notes: document.getElementById('form-notes').value,
-                status: id ? (items.find(i => i.id === id)?.status || '未視聴') : (categoryStatuses[category]?.[0] || '未対応')
-            };
-
-            if (id) {
-                const idx = items.findIndex(i => i.id === id);
-                if (idx !== -1) items[idx] = newItem;
-            } else {
-                items.unshift(newItem);
-            }
-
-            populateTagFilterOptions();
-            closeModal();
-            renderCurrentView();
+            return items.filter(item => {
+                if (catFilter && item.category !== catFilter) return false;
+                if (kwFilter) {
+                    const textMatch = (item.title + ' ' + item.members + ' ' + item.memo + ' ' + item.startDate).toLowerCase().includes(kwFilter);
+                    if (!textMatch) return false;
+                }
+                if (filterUncompletedOnly) {
+                    const statusList = statuses[item.category] || [];
+                    const isCompleted = item.status === statusList[statusList.length - 1] || item.status === '視聴済' || item.status === '読了' || item.status === '参加済' || item.status === '当選' || item.status === '落選' || item.status === '対応完了';
+                    if (isCompleted) return false;
+                }
+                return true;
+            });
         }
 
-        function editItem(id) {
-            openModal(id);
+        // アプリ描画処理
+        function renderApp() {
+            const container = document.getElementById('view-container');
+            const filtered = getFilteredItems();
+            document.getElementById('total-count').innerText = `${filtered.length}件表示`;
+
+            if (currentView === 'list') {
+                container.innerHTML = renderListView(filtered);
+            } else if (currentView === 'month') {
+                container.innerHTML = renderMonthCalendar();
+            } else if (currentView === 'week') {
+                container.innerHTML = renderWeekCalendar();
+            } else if (currentView === 'deadline') {
+                const deadlineFiltered = filtered.filter(i => i.isDeadline || i.applyDeadline);
+                container.innerHTML = renderDeadlineView(deadlineFiltered);
+            }
+        }
+
+        // リスト一覧表示
+        function renderListView(list) {
+            if (list.length === 0) {
+                return `<div class="bg-white rounded-2xl p-8 text-center text-slate-400 text-xs shadow-xs border border-slate-200">表示するコンテンツはありません</div>`;
+            }
+
+            return `<div class="space-y-3">${list.map(item => {
+                const meta = categoryMeta[item.category] || categoryMeta.other;
+                const statusList = statuses[item.category] || [];
+                
+                let dateStr = '';
+                if (item.startDate) {
+                    dateStr += `${item.startDate} ${item.startHour || '00'}:${item.startMinute || '00'}`;
+                    if (item.endDate) dateStr += ` 〜 ${item.endDate} ${item.endHour || '00'}:${item.endMinute || '00'}`;
+                } else if (item.applyDeadline) {
+                    dateStr += `応募締切: ${item.applyDeadline.replace('T', ' ')}`;
+                } else {
+                    dateStr = '日時未設定';
+                }
+
+                return `
+                    <div class="bg-white rounded-2xl p-4 shadow-xs border border-slate-200 relative overflow-hidden flex flex-col gap-2.5">
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="flex flex-wrap items-center gap-1.5">
+                                <span class="text-[10px] px-2 py-0.5 rounded-md font-semibold ${meta.badge}">
+                                    <i class="fa-solid ${meta.icon} mr-1"></i>${meta.label}
+                                </span>
+                                ${item.members ? `<span class="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md font-medium">${item.members}</span>` : ''}
+                                ${item.isDeadline ? `<span class="text-[10px] bg-rose-50 text-rose-600 px-2 py-0.5 rounded-md font-bold">⚠️ 締め切り</span>` : ''}
+                                ${item.seriesId ? `<span class="text-[10px] bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-md font-medium"><i class="fa-solid fa-repeat mr-1"></i>定例</span>` : ''}
+                            </div>
+                            <div class="flex items-center gap-1">
+                                <button onclick="openEditModal('${item.id}')" class="text-slate-400 hover:text-indigo-600 p-1 text-xs"><i class="fa-solid fa-pen"></i></button>
+                                <button onclick="deleteItem('${item.id}')" class="text-slate-400 hover:text-rose-600 p-1 text-xs"><i class="fa-solid fa-trash"></i></button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h3 class="font-bold text-slate-800 text-sm">${item.title}</h3>
+                            <div class="text-xs text-slate-500 mt-0.5 flex items-center gap-1"><i class="fa-regular fa-clock"></i> ${dateStr}</div>
+                        </div>
+
+                        ${item.category === 'lottery' ? `
+                            <div class="bg-emerald-50/60 p-2.5 rounded-xl text-[11px] text-emerald-900 grid grid-cols-2 gap-1 border border-emerald-100 font-medium">
+                                <div>応募開始: ${item.applyStart ? item.applyStart.replace('T', ' ') : '未定'}</div>
+                                <div>当落発表: ${item.resultDate ? item.resultDate.replace('T', ' ') : '未定'}</div>
+                            </div>
+                        ` : ''}
+
+                        ${item.memo ? `<div class="text-xs bg-slate-50 p-2.5 rounded-xl text-slate-600">${item.memo}</div>` : ''}
+
+                        <div class="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
+                            <div class="flex flex-wrap gap-1">
+                                ${statusList.map(st => `
+                                    <button onclick="updateStatus('${item.id}', '${st}')" class="px-2.5 py-1 rounded-lg font-medium text-[11px] transition ${item.status === st ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
+                                        ${st}
+                                    </button>
+                                `).join('')}
+                            </div>
+                            ${item.url ? `<a href="${item.url}" target="_blank" class="text-indigo-600 font-semibold hover:underline flex items-center gap-1"><i class="fa-solid fa-arrow-up-right-from-square"></i> リンク</a>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('')}</div>`;
+        }
+
+        // 月別カレンダー
+        let currentYear = new Date().getFullYear();
+        let currentMonth = new Date().getMonth();
+
+        function renderMonthCalendar() {
+            const firstDay = new Date(currentYear, currentMonth, 1);
+            const lastDay = new Date(currentYear, currentMonth + 1, 0);
+            const startDayOfWeek = firstDay.getDay();
+            const daysInMonth = lastDay.getDate();
+
+            let html = `
+                <div class="bg-white rounded-2xl p-4 shadow-xs border border-slate-200">
+                    <div class="flex items-center justify-between mb-4">
+                        <button onclick="changeMonth(-1)" class="p-2 text-slate-600 hover:bg-slate-100 rounded-xl"><i class="fa-solid fa-chevron-left"></i></button>
+                        <h2 class="font-bold text-slate-800 text-sm">${currentYear}年 ${currentMonth + 1}月</h2>
+                        <button onclick="changeMonth(1)" class="p-2 text-slate-600 hover:bg-slate-100 rounded-xl"><i class="fa-solid fa-chevron-right"></i></button>
+                    </div>
+
+                    <div class="grid grid-cols-7 gap-1 text-center text-[11px] font-bold text-slate-400 mb-2">
+                        <div class="text-rose-500">日</div><div>月</div><div>火</div><div>水</div><div>木</div><div>金</div><div class="text-indigo-500">土</div>
+                    </div>
+
+                    <div class="grid grid-cols-7 gap-1">
+            `;
+
+            for (let i = 0; i < startDayOfWeek; i++) {
+                html += `<div class="h-24 bg-slate-50/50 rounded-xl border border-slate-100 opacity-30"></div>`;
+            }
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                
+                const dayItems = items.filter(item => {
+                    if (item.startDate === dateStr) return true;
+                    if (item.category === 'lottery' && item.applyStart && item.applyDeadline) {
+                        return dateStr >= item.applyStart.split('T')[0] && dateStr <= item.applyDeadline.split('T')[0];
+                    }
+                    return false;
+                });
+
+                const resultItems = items.filter(item => item.category === 'lottery' && item.resultDate && item.resultDate.split('T')[0] === dateStr);
+
+                html += `
+                    <div onclick="jumpToListDate('${dateStr}')" class="h-24 bg-white rounded-xl border border-slate-100 p-1 overflow-y-auto flex flex-col gap-0.5 cursor-pointer hover:border-indigo-300 transition">
+                        <div class="text-[11px] font-bold text-slate-700">${day}</div>
+                        <div class="flex flex-col gap-0.5">
+                            ${resultItems.map(item => `<div class="text-[9px] bg-emerald-600 text-white px-1 py-0.5 rounded truncate font-bold">【当落】${item.title}</div>`).join('')}
+                            ${dayItems.map(item => {
+                                if (item.category === 'lottery' && item.applyStart && item.applyDeadline) {
+                                    const sDate = item.applyStart.split('T')[0];
+                                    const eDate = item.applyDeadline.split('T')[0];
+                                    if (dateStr === sDate) return `<div class="text-[9px] bg-teal-600 text-white px-1 py-0.5 rounded truncate font-bold">【応募開始】${item.title}</div>`;
+                                    if (dateStr === eDate) return `<div class="text-[9px] bg-rose-500 text-white px-1 py-0.5 rounded truncate font-bold">【応募締切】${item.title}</div>`;
+                                    return `<div class="h-1 bg-teal-200 rounded-full w-full my-0.5"></div>`;
+                                }
+                                return `<div class="text-[9px] bg-indigo-50 text-indigo-700 px-1 py-0.5 rounded truncate font-medium">${item.title}</div>`;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            html += `</div></div>`;
+            return html;
+        }
+
+        function changeMonth(dir) {
+            currentMonth += dir;
+            if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+            else if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+            renderApp();
+        }
+
+        function jumpToListDate(dateStr) {
+            document.getElementById('filter-keyword').value = dateStr;
+            switchView('list');
+            renderApp();
+        }
+
+        // 週別カレンダー
+        let currentWeekOffset = 0;
+        function renderWeekCalendar() {
+            const today = new Date();
+            const startOfWeek = new Date(today);
+            startOfWeek.setDate(today.getDate() - today.getDay() + (currentWeekOffset * 7));
+
+            let html = `
+                <div class="bg-white rounded-2xl p-4 shadow-xs border border-slate-200">
+                    <div class="flex items-center justify-between mb-4">
+                        <button onclick="changeWeek(-1)" class="p-2 text-slate-600 hover:bg-slate-100 rounded-xl"><i class="fa-solid fa-chevron-left"></i></button>
+                        <h2 class="font-bold text-slate-800 text-sm">週間スケジュール</h2>
+                        <button onclick="changeWeek(1)" class="p-2 text-slate-600 hover:bg-slate-100 rounded-xl"><i class="fa-solid fa-chevron-right"></i></button>
+                    </div>
+                    <div class="space-y-2">
+            `;
+
+            for (let i = 0; i < 7; i++) {
+                const targetDate = new Date(startOfWeek);
+                targetDate.setDate(startOfWeek.getDate() + i);
+                const dateStr = targetDate.toISOString().split('T')[0];
+                const dayName = ['日', '月', '火', '水', '木', '金', '土'][i];
+
+                const dayItems = items.filter(item => item.startDate === dateStr || (item.category === 'lottery' && item.applyStart && item.applyDeadline && dateStr >= item.applyStart.split('T')[0] && dateStr <= item.applyDeadline.split('T')[0]));
+
+                html += `
+                    <div class="bg-slate-50 rounded-xl p-3 border border-slate-100 flex flex-col gap-1.5">
+                        <div class="text-xs font-bold text-slate-700 flex items-center justify-between">
+                            <span>${dateStr} (${dayName})</span>
+                        </div>
+                        <div class="flex flex-wrap gap-1">
+                            ${dayItems.length === 0 ? `<span class="text-[11px] text-slate-400">予定なし</span>` : dayItems.map(item => `<span class="text-[10px] bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded font-medium">${item.title}</span>`).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            html += `</div></div>`;
+            return html;
+        }
+
+        function changeWeek(dir) {
+            currentWeekOffset += dir;
+            renderApp();
+        }
+
+        // 締め切り一覧
+        function renderDeadlineView(list) {
+            if (list.length === 0) {
+                return `<div class="bg-white rounded-2xl p-8 text-center text-slate-400 text-xs shadow-xs border border-slate-200">締め切り対象のコンテンツはありません</div>`;
+            }
+            return renderListView(list);
+        }
+
+        // モーダル操作
+        function openModal() {
+            document.getElementById('edit-id').value = '';
+            document.getElementById('edit-series-id').value = '';
+            document.getElementById('modal-title').innerText = '新規・定例コンテンツ追加';
+            document.getElementById('registration-mode-tabs').classList.remove('hidden');
+            document.getElementById('item-form').reset();
+            switchRegMode('single');
+            toggleCategoryFields();
+            document.getElementById('item-modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('item-modal').classList.add('hidden');
+        }
+
+        function openEditModal(id) {
+            const item = items.find(i => i.id === id);
+            if (!item) return;
+
+            document.getElementById('edit-id').value = item.id;
+            document.getElementById('edit-series-id').value = item.seriesId || '';
+            document.getElementById('modal-title').innerText = 'コンテンツ編集';
+            document.getElementById('registration-mode-tabs').classList.add('hidden');
+            document.getElementById('section-series-options').classList.add('hidden');
+            document.getElementById('section-single-dates').classList.remove('hidden');
+
+            document.getElementById('form-title').value = item.title;
+            document.getElementById('form-category').value = item.category;
+            document.getElementById('form-members').value = item.members || '';
+            document.getElementById('form-start-date').value = item.startDate || '';
+            document.getElementById('form-start-hour').value = item.startHour || '';
+            document.getElementById('form-start-minute').value = item.startMinute || '';
+            document.getElementById('form-end-date').value = item.endDate || '';
+            document.getElementById('form-end-hour').value = item.endHour || '';
+            document.getElementById('form-end-minute').value = item.endMinute || '';
+            document.getElementById('form-is-deadline').checked = item.isDeadline || false;
+            document.getElementById('form-apply-start').value = item.applyStart || '';
+            document.getElementById('form-apply-deadline').value = item.applyDeadline || '';
+            document.getElementById('form-result-date').value = item.resultDate || '';
+            document.getElementById('form-url').value = item.url || '';
+            document.getElementById('form-memo').value = item.memo || '';
+
+            toggleCategoryFields();
+            document.getElementById('item-modal').classList.remove('hidden');
+        }
+
+        // 保存処理
+        function saveItem(e) {
+            e.preventDefault();
+            const id = document.getElementById('edit-id').value;
+            const seriesId = document.getElementById('edit-series-id').value;
+
+            const title = document.getElementById('form-title').value;
+            const category = document.getElementById('form-category').value;
+            const members = document.getElementById('form-members').value;
+            const startDate = document.getElementById('form-start-date').value;
+            const startHour = document.getElementById('form-start-hour').value;
+            const startMinute = document.getElementById('form-start-minute').value;
+            const endDate = document.getElementById('form-end-date').value;
+            const endHour = document.getElementById('form-end-hour').value;
+            const endMinute = document.getElementById('form-end-minute').value;
+            const isDeadline = document.getElementById('form-is-deadline').checked;
+            const applyStart = document.getElementById('form-apply-start').value;
+            const applyDeadline = document.getElementById('form-apply-deadline').value;
+            const resultDate = document.getElementById('form-result-date').value;
+            const url = document.getElementById('form-url').value;
+            const memo = document.getElementById('form-memo').value;
+
+            if (id && seriesId) {
+                pendingItemData = { id, seriesId, title, category, members, startDate, startHour, startMinute, endDate, endHour, endMinute, isDeadline, applyStart, applyDeadline, resultDate, url, memo };
+                closeModal();
+                document.getElementById('series-edit-modal').classList.remove('hidden');
+                return;
+            }
+
+            if (regMode === 'series' && !id) {
+                const freq = document.getElementById('series-freq').value;
+                const dayOfWeek = parseInt(document.getElementById('series-day').value);
+                const sDateStr = document.getElementById('series-start-date').value;
+                const count = parseInt(document.getElementById('series-count').value) || 4;
+                const newSeriesId = 'series_' + Date.now();
+
+                let currDate = new Date(sDateStr || Date.now());
+                for (let i = 0; i < count; i++) {
+                    if (freq === 'weekly') {
+                        while (currDate.getDay() !== dayOfWeek) {
+                            currDate.setDate(currDate.getDate() + 1);
+                        }
+                    }
+                    const dStr = currDate.toISOString().split('T')[0];
+                    items.push({
+                        id: '_' + Math.random().toString(36).substr(2, 9),
+                        seriesId: newSeriesId,
+                        title, category, members,
+                        startDate: dStr, startHour, startMinute,
+                        endDate: dStr, endHour, endMinute,
+                        isDeadline, applyStart, applyDeadline, resultDate, url, memo,
+                        status: (statuses[category] || [])[0] || '未視聴'
+                    });
+                    currDate.setDate(currDate.getDate() + 7);
+                }
+            } else if (id) {
+                const item = items.find(i => i.id === id);
+                if (item) {
+                    item.title = title; item.category = category; item.members = members;
+                    item.startDate = startDate; item.startHour = startHour; item.startMinute = startMinute;
+                    item.endDate = endDate; item.endHour = endHour; item.endMinute = endMinute;
+                    item.isDeadline = isDeadline; item.applyStart = applyStart; item.applyDeadline = applyDeadline;
+                    item.resultDate = resultDate; item.url = url; item.memo = memo;
+                }
+            } else {
+                items.push({
+                    id: '_' + Math.random().toString(36).substr(2, 9),
+                    title, category, members,
+                    startDate, startHour, startMinute,
+                    endDate, endHour, endMinute,
+                    isDeadline, applyStart, applyDeadline, resultDate, url, memo,
+                    status: (statuses[category] || [])[0] || '未視聴'
+                });
+            }
+
+            closeModal();
+            renderApp();
+        }
+
+        function confirmSeriesEdit(mode) {
+            if (!pendingItemData) return;
+            const data = pendingItemData;
+
+            if (mode === 'single') {
+                const item = items.find(i => i.id === data.id);
+                if (item) {
+                    item.seriesId = '';
+                    item.title = data.title; item.category = data.category; item.members = data.members;
+                    item.startDate = data.startDate; item.startHour = data.startHour; item.startMinute = data.startMinute;
+                    item.endDate = data.endDate; item.endHour = data.endHour; item.endMinute = data.endMinute;
+                    item.isDeadline = data.isDeadline; item.applyStart = data.applyStart; item.applyDeadline = data.applyDeadline;
+                    item.resultDate = data.resultDate; item.url = data.url; item.memo = data.memo;
+                }
+            } else {
+                items.forEach(item => {
+                    if (item.seriesId === data.seriesId) {
+                        item.title = data.title; item.category = data.category; item.members = data.members;
+                        item.isDeadline = data.isDeadline; item.url = data.url; item.memo = data.memo;
+                    }
+                });
+            }
+
+            pendingItemData = null;
+            document.getElementById('series-edit-modal').classList.add('hidden');
+            renderApp();
+        }
+
+        function closeSeriesEditModal() {
+            pendingItemData = null;
+            document.getElementById('series-edit-modal').classList.add('hidden');
+        }
+
+        function updateStatus(id, newStatus) {
+            const item = items.find(i => i.id === id);
+            if (item) {
+                item.status = newStatus;
+                renderApp();
+            }
         }
 
         function deleteItem(id) {
             if (confirm('このコンテンツを削除しますか？')) {
                 items = items.filter(i => i.id !== id);
-                populateTagFilterOptions();
-                renderCurrentView();
+                renderApp();
             }
         }
     </script>
