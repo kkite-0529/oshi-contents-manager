@@ -1,0 +1,1305 @@
+<!DOCTYPE html>
+<html lang="ja" class="h-full bg-slate-50 text-slate-800">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>推し活回収ノート | Quick Oshi Tracker</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#fdf2f8',
+              100: '#fce7f3',
+              500: '#ec4899',
+              600: '#db2777',
+              700: '#be185d',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <style>
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    .clean-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
+    }
+
+    @keyframes pulse-subtle {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+    .animate-pulse-subtle {
+      animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+  </style>
+</head>
+<body class="h-full flex flex-col font-sans antialiased text-slate-800 bg-slate-50 pb-20 md:pb-0 selection:bg-brand-500 selection:text-white">
+
+  <!-- TOP HEADER -->
+  <header class="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-slate-200 px-4 py-3 shadow-sm">
+    <div class="max-w-4xl mx-auto flex items-center justify-between gap-2">
+      <div class="flex items-center gap-2.5">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-brand-600 to-pink-400 flex items-center justify-center text-white shadow-sm">
+          <i class="fa-solid fa-heart text-base"></i>
+        </div>
+        <div>
+          <h1 class="text-base font-bold tracking-tight text-slate-900">
+            推し活回収ノート
+          </h1>
+          <p class="text-[10px] text-slate-500 flex items-center gap-1">
+            <span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500"></span> カンタン爆速管理
+          </p>
+        </div>
+      </div>
+
+      <!-- Header Action Buttons -->
+      <div class="flex items-center gap-2">
+        <button id="btn-open-filter" class="relative p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition text-xs flex items-center gap-1.5 border border-slate-200">
+          <i class="fa-solid fa-filter text-brand-600"></i>
+          <span class="hidden sm:inline font-medium">絞り込み</span>
+          <span id="filter-active-dot" class="hidden absolute -top-1 -right-1 w-2.5 h-2.5 bg-brand-500 rounded-full ring-2 ring-white"></span>
+        </button>
+        
+        <button id="btn-add-schedule" class="px-3 py-1.5 rounded-lg bg-brand-600 hover:bg-brand-700 text-white font-medium text-xs sm:text-sm shadow-sm transition flex items-center gap-1.5 active:scale-95">
+          <i class="fa-solid fa-plus text-xs"></i>
+          <span>予定を追加</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Quick Search & Uncollected Toggle -->
+    <div class="max-w-4xl mx-auto mt-2.5 flex items-center gap-2">
+      <div class="relative flex-1">
+        <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-xs text-slate-400"></i>
+        <input type="text" id="search-input" placeholder="番組名・雑誌・キーワード検索..." 
+               class="w-full bg-slate-100/80 text-xs pl-8 pr-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:bg-white focus:border-brand-500 text-slate-800 placeholder-slate-400 transition">
+      </div>
+      <button id="quick-uncollected-toggle" class="px-2.5 py-2 rounded-lg text-xs font-medium border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition flex items-center gap-1.5 whitespace-nowrap shadow-sm">
+        <i class="fa-regular fa-square-check text-brand-600"></i>
+        <span>未回収のみ</span>
+      </button>
+    </div>
+
+    <!-- Active Filters Display Bar -->
+    <div id="active-filters-bar" class="max-w-4xl mx-auto mt-2 hidden flex-wrap gap-1.5 text-[11px]"></div>
+  </header>
+
+  <!-- MAIN CONTENT CONTAINER -->
+  <main class="flex-1 max-w-4xl w-full mx-auto p-3 sm:p-4 overflow-y-auto">
+
+    <!-- DESKTOP / TABLET VIEW TABS -->
+    <div class="hidden md:flex items-center justify-between mb-4 bg-white p-1 rounded-xl border border-slate-200 shadow-sm">
+      <div class="flex items-center gap-1 w-full">
+        <button data-view="list" class="view-tab-btn flex-1 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition flex items-center justify-center gap-2 active-tab">
+          <i class="fa-solid fa-list-ul"></i> リスト一覧
+        </button>
+        <button data-view="month" class="view-tab-btn flex-1 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition flex items-center justify-center gap-2">
+          <i class="fa-regular fa-calendar-days"></i> 月間カレンダー
+        </button>
+        <button data-view="week" class="view-tab-btn flex-1 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition flex items-center justify-center gap-2">
+          <i class="fa-solid fa-calendar-week"></i> 週間スケジュール
+        </button>
+      </div>
+    </div>
+
+    <!-- Urgent Alert Banner (<24h Deadline) -->
+    <div id="urgent-alert-banner" class="hidden mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-red-800 text-xs flex items-start gap-2.5 shadow-sm animate-pulse-subtle">
+      <i class="fa-solid fa-triangle-exclamation text-red-500 text-sm mt-0.5"></i>
+      <div class="flex-1">
+        <span class="font-bold text-red-900">【回収アラート】</span>
+        <span id="urgent-alert-text">見逃し配信・応募の締切が24時間以内の予定があります！</span>
+      </div>
+    </div>
+
+    <!-- VIEW 1: LIST VIEW -->
+    <section id="view-list" class="view-section space-y-3">
+      <div id="list-container" class="space-y-3"></div>
+      <div id="list-empty-state" class="hidden text-center py-12 px-4 bg-white rounded-2xl border border-slate-200 shadow-sm">
+        <div class="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3">
+          <i class="fa-solid fa-inbox text-xl"></i>
+        </div>
+        <p class="text-sm font-semibold text-slate-700">該当する予定が見つかりません</p>
+        <p class="text-xs text-slate-500 mt-1">右上「予定を追加」ボタンから登録してください</p>
+      </div>
+    </section>
+
+    <!-- VIEW 2: MONTH CALENDAR VIEW -->
+    <section id="view-month" class="view-section hidden space-y-3">
+      <div class="bg-white rounded-2xl p-3 sm:p-4 border border-slate-200 shadow-sm">
+        <!-- Calendar Controls -->
+        <div class="flex items-center justify-between mb-3">
+          <button id="month-prev-btn" class="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs transition">
+            <i class="fa-solid fa-chevron-left"></i>
+          </button>
+          <h2 id="month-display-title" class="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
+            2026年 10月
+          </h2>
+          <button id="month-next-btn" class="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs transition">
+            <i class="fa-solid fa-chevron-right"></i>
+          </button>
+        </div>
+
+        <!-- Weekday Headers -->
+        <div class="grid grid-cols-7 text-center text-[10px] sm:text-xs font-bold text-slate-500 mb-1">
+          <div class="text-red-500 py-1">日</div>
+          <div class="py-1">月</div>
+          <div class="py-1">火</div>
+          <div class="py-1">水</div>
+          <div class="py-1">木</div>
+          <div class="py-1">金</div>
+          <div class="text-sky-500 py-1">土</div>
+        </div>
+
+        <!-- Month Day Grid -->
+        <div id="month-grid" class="grid grid-cols-7 gap-1"></div>
+      </div>
+
+      <!-- Selected Date Items Panel -->
+      <div id="month-selected-day-box" class="bg-white rounded-xl p-3.5 border border-slate-200 shadow-sm hidden">
+        <h3 id="selected-day-title" class="text-xs font-bold text-slate-800 border-b border-slate-100 pb-2 mb-2 flex items-center justify-between">
+          <span>選択日の予定</span>
+          <span class="text-[10px] text-slate-400 font-normal">タップで詳細</span>
+        </h3>
+        <div id="selected-day-items" class="space-y-2"></div>
+      </div>
+    </section>
+
+    <!-- VIEW 3: WEEK CALENDAR VIEW -->
+    <section id="view-week" class="view-section hidden space-y-3">
+      <div class="bg-white rounded-2xl p-3 sm:p-4 border border-slate-200 shadow-sm">
+        <!-- Week Controls -->
+        <div class="flex items-center justify-between mb-3">
+          <button id="week-prev-btn" class="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs transition">
+            <i class="fa-solid fa-chevron-left"></i> 前の週
+          </button>
+          <h2 id="week-display-title" class="text-xs sm:text-sm font-bold text-slate-900">
+            10月12日 〜 10月18日
+          </h2>
+          <button id="week-next-btn" class="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs transition">
+            次の週 <i class="fa-solid fa-chevron-right"></i>
+          </button>
+        </div>
+
+        <!-- 7-Day View Container -->
+        <div id="week-list-container" class="space-y-2.5"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MOBILE BOTTOM NAVIGATION -->
+  <nav class="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-t border-slate-200 px-3 py-1.5 shadow-lg">
+    <div class="flex items-center justify-around max-w-md mx-auto">
+      <button data-view="list" class="view-tab-btn flex flex-col items-center gap-0.5 text-slate-500 hover:text-brand-600 transition py-1 px-3 rounded-lg active-tab">
+        <i class="fa-solid fa-list-ul text-base"></i>
+        <span class="text-[10px] font-semibold">リスト</span>
+      </button>
+      
+      <button data-view="month" class="view-tab-btn flex flex-col items-center gap-0.5 text-slate-500 hover:text-brand-600 transition py-1 px-3 rounded-lg">
+        <i class="fa-regular fa-calendar-days text-base"></i>
+        <span class="text-[10px] font-semibold">月間</span>
+      </button>
+      
+      <button data-view="week" class="view-tab-btn flex flex-col items-center gap-0.5 text-slate-500 hover:text-brand-600 transition py-1 px-3 rounded-lg">
+        <i class="fa-solid fa-calendar-week text-base"></i>
+        <span class="text-[10px] font-semibold">週間</span>
+      </button>
+      
+      <button id="btn-quick-add-bottom" class="flex flex-col items-center gap-0.5 text-brand-600 transition py-1 px-3 rounded-lg">
+        <div class="w-6 h-6 rounded-full bg-brand-600 text-white flex items-center justify-center text-xs shadow-sm">
+          <i class="fa-solid fa-plus"></i>
+        </div>
+        <span class="text-[10px] font-semibold text-brand-600">追加</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- MODAL: ADD / EDIT SCHEDULE -->
+  <div id="modal-schedule" class="fixed inset-0 z-50 flex items-center justify-center p-3 bg-slate-900/40 backdrop-blur-sm hidden overflow-y-auto">
+    <div class="bg-white border border-slate-200 rounded-2xl w-full max-w-lg overflow-hidden my-auto shadow-xl transition-all">
+      <div class="flex items-center justify-between p-4 border-b border-slate-100 bg-slate-50">
+        <h3 id="modal-title" class="text-sm font-bold text-slate-900 flex items-center gap-2">
+          <i class="fa-solid fa-pen-to-square text-brand-600"></i>
+          <span>予定の追加</span>
+        </h3>
+        <button id="btn-close-schedule-modal" class="text-slate-400 hover:text-slate-700 p-1 rounded-lg">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <form id="form-schedule" class="p-4 space-y-4 max-h-[80vh] overflow-y-auto text-xs">
+        <input type="hidden" id="edit-id" value="">
+
+        <!-- MANDATORY FIELD: Title / Name ONLY -->
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <label class="block font-bold text-slate-800">
+              タイトル / 番組名・誌名 <span class="text-red-500 text-xs font-bold">*必須</span>
+            </label>
+            <span class="text-[10px] text-slate-400">これだけで登録OK</span>
+          </div>
+          <input type="text" id="form-title" required placeholder="例: 沈黙の金曜日, ラヴィット, ソログラビア" 
+                 class="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-slate-900 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 text-xs font-medium">
+        </div>
+
+        <!-- OPTIONAL DETAILS ACCORDION HEADER -->
+        <div class="pt-2 border-t border-slate-100">
+          <p class="text-[11px] text-slate-500 font-bold flex items-center gap-1.5">
+            <i class="fa-solid fa-sliders text-brand-600"></i>
+            <span>詳細設定（すべて任意）</span>
+          </p>
+        </div>
+
+        <!-- Native Date Selection & Separate Dropdown Time (Hours / Minutes 1-min intervals) -->
+        <div class="space-y-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
+          <!-- DATE PICKER (Native Calendar) -->
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">
+              <i class="fa-regular fa-calendar text-brand-600 mr-1"></i>日付 (カレンダーから選択)
+            </label>
+            <input type="date" id="form-date" 
+                   class="w-full bg-white border border-slate-300 rounded-lg p-2 text-slate-800 focus:outline-none focus:border-brand-500 font-medium">
+          </div>
+
+          <!-- TIME DROPDOWNS (Separated Hour & Minute: 1-minute step) -->
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">
+              <i class="fa-regular fa-clock text-brand-600 mr-1"></i>時間 (時・分 プルダウン)
+            </label>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <span class="text-[10px] text-slate-500 mb-0.5 block">時 (00〜23)</span>
+                <select id="form-hour" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-slate-800 focus:outline-none focus:border-brand-500 font-medium">
+                  <option value="">-- 指定なし --</option>
+                  <!-- Populated via JS 00-23 -->
+                </select>
+              </div>
+
+              <div>
+                <span class="text-[10px] text-slate-500 mb-0.5 block">分 (1分単位)</span>
+                <select id="form-minute" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-slate-800 focus:outline-none focus:border-brand-500 font-medium">
+                  <option value="">-- 指定なし --</option>
+                  <!-- Populated via JS 00-59 -->
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Category & Member Tag -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">カテゴリ</label>
+            <select id="form-category" class="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-brand-500 font-medium">
+              <option value="tv">📺 テレビ (青)</option>
+              <option value="radio">📻 ラジオ (緑)</option>
+              <option value="video">▶️ Web動画/配信 (紫/赤)</option>
+              <option value="magazine">📖 雑誌/書籍 (オレンジ)</option>
+              <option value="event">🎤 ライブ/イベント (ピンク)</option>
+              <option value="lottery">🎯 抽選/応募 (エメラルド)</option>
+              <option value="other">📌 その他 (スレート)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">推しメンバータグ</label>
+            <input type="text" id="form-members" placeholder="例: 弓木奈於, 乃木坂46" 
+                   class="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-brand-500">
+          </div>
+        </div>
+
+        <!-- Initial Status -->
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">回収ステータス</label>
+          <select id="form-status" class="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-brand-500 font-medium">
+            <!-- Dynamic Statuses populated by category -->
+          </select>
+        </div>
+
+        <!-- External URL -->
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">直リンク URL</label>
+          <input type="url" id="form-url" placeholder="https://tver.jp/..." 
+                 class="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-brand-500">
+        </div>
+
+        <!-- Notes -->
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">メモ・タイムスタンプ</label>
+          <textarea id="form-note" rows="2" placeholder="例: 15:20〜のトーク必聴 / P.42グラビア掲載" 
+                    class="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-brand-500"></textarea>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+          <button type="button" id="btn-cancel-schedule" class="px-3.5 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium transition">
+            キャンセル
+          </button>
+          <button type="submit" class="px-4 py-2 rounded-lg bg-brand-600 hover:bg-brand-700 text-white font-medium shadow-sm active:scale-95 transition">
+            保存する
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: FILTER -->
+  <div id="modal-filter" class="fixed inset-0 z-50 flex items-center justify-center p-3 bg-slate-900/40 backdrop-blur-sm hidden">
+    <div class="bg-white border border-slate-200 rounded-2xl w-full max-w-md overflow-hidden shadow-xl">
+      <div class="flex items-center justify-between p-4 border-b border-slate-100 bg-slate-50">
+        <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+          <i class="fa-solid fa-sliders text-brand-600"></i>
+          <span>条件の絞り込み</span>
+        </h3>
+        <button id="btn-close-filter-modal" class="text-slate-400 hover:text-slate-700 p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="p-4 space-y-4 text-xs">
+        <div>
+          <label class="block font-bold text-slate-700 mb-2">カテゴリ</label>
+          <div id="filter-category-chips" class="flex flex-wrap gap-1.5"></div>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-2">推しメンバータグ</label>
+          <div id="filter-member-chips" class="flex flex-wrap gap-1.5"></div>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-2">回収状態</label>
+          <div class="grid grid-cols-2 gap-2">
+            <button data-status-filter="all" class="filter-status-btn p-2 rounded-lg border border-slate-200 bg-slate-50 text-slate-700 text-center font-medium">
+              すべて表示
+            </button>
+            <button data-status-filter="uncompleted" class="filter-status-btn p-2 rounded-lg border border-slate-200 bg-slate-50 text-slate-700 text-center font-medium">
+              未回収のみ
+            </button>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between pt-3 border-t border-slate-100">
+          <button id="btn-reset-filters" class="text-slate-500 hover:text-brand-600 text-xs font-semibold underline">
+            リセット
+          </button>
+          <button id="btn-apply-filters" class="px-4 py-2 rounded-lg bg-brand-600 hover:bg-brand-700 text-white font-medium shadow-sm">
+            絞り込んで表示
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT LOGIC -->
+  <script>
+    // --- CATEGORY COLOR DEFINITIONS (WHITE-THEME OPTIMIZED) ---
+    const CATEGORIES = {
+      tv: { 
+        label: 'テレビ', 
+        icon: 'fa-solid fa-tv', 
+        badgeBg: 'bg-blue-50 text-blue-700 border-blue-200',
+        borderColor: 'border-l-blue-600',
+        barBg: 'bg-blue-600'
+      },
+      radio: { 
+        label: 'ラジオ', 
+        icon: 'fa-solid fa-radio', 
+        badgeBg: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+        borderColor: 'border-l-emerald-600',
+        barBg: 'bg-emerald-600'
+      },
+      video: { 
+        label: 'Web動画/配信', 
+        icon: 'fa-solid fa-play', 
+        badgeBg: 'bg-purple-50 text-purple-700 border-purple-200',
+        borderColor: 'border-l-purple-600',
+        barBg: 'bg-purple-600'
+      },
+      magazine: { 
+        label: '雑誌/書籍', 
+        icon: 'fa-solid fa-book-open', 
+        badgeBg: 'bg-orange-50 text-orange-700 border-orange-200',
+        borderColor: 'border-l-orange-500',
+        barBg: 'bg-orange-500'
+      },
+      event: { 
+        label: 'ライブ/イベント', 
+        icon: 'fa-solid fa-ticket', 
+        badgeBg: 'bg-pink-50 text-pink-700 border-pink-200',
+        borderColor: 'border-l-pink-600',
+        barBg: 'bg-pink-600'
+      },
+      lottery: { 
+        label: '抽選/応募', 
+        icon: 'fa-solid fa-bullseye', 
+        badgeBg: 'bg-teal-50 text-teal-700 border-teal-200',
+        borderColor: 'border-l-teal-600',
+        barBg: 'bg-teal-600'
+      },
+      other: { 
+        label: 'その他', 
+        icon: 'fa-solid fa-bookmark', 
+        badgeBg: 'bg-slate-100 text-slate-700 border-slate-200',
+        borderColor: 'border-l-slate-500',
+        barBg: 'bg-slate-500'
+      }
+    };
+
+    // --- RECOVER / STATUS FLOW DEFINITIONS ---
+    const STATUS_FLOWS = {
+      tv: [
+        { key: 'unwatched', label: '未視聴', isDone: false, badgeClass: 'bg-slate-100 text-slate-700 border-slate-300' },
+        { key: 'recorded', label: '録画・予約済', isDone: false, badgeClass: 'bg-blue-100 text-blue-800 border-blue-300 font-semibold' },
+        { key: 'watched', label: '視聴完了', isDone: true, badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-300' },
+        { key: 'saved', label: '保存完了', isDone: true, badgeClass: 'bg-purple-100 text-purple-800 border-purple-300' }
+      ],
+      radio: [
+        { key: 'unwatched', label: '未聴集', isDone: false, badgeClass: 'bg-slate-100 text-slate-700 border-slate-300' },
+        { key: 'recorded', label: 'タイムシフト予約', isDone: false, badgeClass: 'bg-amber-100 text-amber-800 border-amber-300 font-semibold' },
+        { key: 'watched', label: '聴取完了', isDone: true, badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-300' }
+      ],
+      video: [
+        { key: 'unwatched', label: '未視聴', isDone: false, badgeClass: 'bg-slate-100 text-slate-700 border-slate-300' },
+        { key: 'recorded', label: '後で見る', isDone: false, badgeClass: 'bg-purple-100 text-purple-800 border-purple-300' },
+        { key: 'watched', label: '視聴完了', isDone: true, badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-300' }
+      ],
+      magazine: [
+        { key: 'unpurchased', label: '未購入', isDone: false, badgeClass: 'bg-slate-100 text-slate-700 border-slate-300' },
+        { key: 'reserved', label: '予約済', isDone: false, badgeClass: 'bg-sky-100 text-sky-800 border-sky-300 font-semibold' },
+        { key: 'purchased', label: '購入済', isDone: false, badgeClass: 'bg-orange-100 text-orange-800 border-orange-300 font-semibold' },
+        { key: 'read', label: '読了・切抜き完了', isDone: true, badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-300' }
+      ],
+      lottery: [
+        { key: 'unapplied', label: '未応募', isDone: false, badgeClass: 'bg-rose-100 text-rose-800 border-rose-300 font-bold' },
+        { key: 'applied', label: '応募完了', isDone: false, badgeClass: 'bg-blue-100 text-blue-800 border-blue-300 font-semibold' },
+        { key: 'waiting', label: '当落待ち', isDone: false, badgeClass: 'bg-amber-100 text-amber-800 border-amber-300 font-semibold animate-pulse-subtle' },
+        { key: 'won', label: '🎉 当選', isDone: true, badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-400 font-bold' },
+        { key: 'lost', label: '落選', isDone: true, badgeClass: 'bg-slate-100 text-slate-500 border-slate-300' }
+      ],
+      event: [
+        { key: 'unattended', label: '未参加', isDone: false, badgeClass: 'bg-slate-100 text-slate-700 border-slate-300' },
+        { key: 'attended', label: '参加完了', isDone: true, badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-300' }
+      ],
+      other: [
+        { key: 'uncompleted', label: '未完了', isDone: false, badgeClass: 'bg-slate-100 text-slate-700 border-slate-300' },
+        { key: 'completed', label: '完了', isDone: true, badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-300' }
+      ]
+    };
+
+    // --- PRESET DUMMY DATA ---
+    const today = new Date();
+    const formatDateIso = (d) => d.toISOString().split('T')[0];
+
+    let schedules = [
+      {
+        id: 's1',
+        title: '沈黙の金曜日 (生放送)',
+        category: 'radio',
+        members: ['弓木奈於'],
+        date: formatDateIso(today),
+        hour: '21',
+        minute: '00',
+        status: 'recorded',
+        url: 'https://radiko.jp',
+        note: 'オープニング必聴。ゲストあり。'
+      },
+      {
+        id: 's2',
+        title: '乃木坂工事中 TVer見逃し配信終了',
+        category: 'video',
+        members: ['弓木奈於', '乃木坂46'],
+        date: formatDateIso(today),
+        hour: '23',
+        minute: '59',
+        status: 'unwatched',
+        url: 'https://tver.jp',
+        note: '08:45〜のトークパート回収'
+      },
+      {
+        id: 's3',
+        title: '全国ツアー追加公演 抽選応募締め切り',
+        category: 'lottery',
+        members: ['乃木坂46'],
+        date: formatDateIso(new Date(today.getTime() + 86400000)),
+        hour: '18',
+        minute: '00',
+        status: 'unapplied',
+        url: 'https://eplus.jp',
+        note: 'モバイル会員限定'
+      },
+      {
+        id: 's4',
+        title: '雑誌「B.L.T.」ソログラビア掲載号',
+        category: 'magazine',
+        members: ['弓木奈於'],
+        date: formatDateIso(new Date(today.getTime() + 172800000)),
+        hour: '',
+        minute: '',
+        status: 'reserved',
+        url: '',
+        note: '巻頭グラビア12P'
+      }
+    ];
+
+    // --- APP STATE ---
+    let currentView = 'list';
+    let searchQuery = '';
+    let filterCategory = 'all';
+    let filterMember = 'all';
+    let filterStatus = 'all';
+    let currentMonthDate = new Date();
+    let currentWeekDate = new Date();
+
+    // --- DOM INITIALIZATION ---
+    window.addEventListener('DOMContentLoaded', () => {
+      populateTimeDropdowns();
+      initEventListeners();
+      renderActiveFilters();
+      renderCurrentView();
+      checkUrgentAlerts();
+    });
+
+    // Populate Hour (00-23) & Minute (00-59) dropdowns
+    function populateTimeDropdowns() {
+      const hourSelect = document.getElementById('form-hour');
+      const minSelect = document.getElementById('form-minute');
+
+      for (let h = 0; h < 24; h++) {
+        const val = String(h).padStart(2, '0');
+        hourSelect.innerHTML += `<option value="${val}">${val} 時</option>`;
+      }
+
+      for (let m = 0; m < 60; m++) {
+        const val = String(m).padStart(2, '0');
+        minSelect.innerHTML += `<option value="${val}">${val} 分</option>`;
+      }
+    }
+
+    // --- VIEW SWITCHER ---
+    function renderCurrentView() {
+      document.querySelectorAll('.view-section').forEach(sec => sec.classList.add('hidden'));
+      
+      document.querySelectorAll('.view-tab-btn').forEach(btn => {
+        if (btn.dataset.view === currentView) {
+          btn.classList.add('text-brand-600', 'font-bold');
+          btn.classList.remove('text-slate-500', 'text-slate-600');
+        } else {
+          btn.classList.remove('text-brand-600', 'font-bold');
+          btn.classList.add('text-slate-500', 'text-slate-600');
+        }
+      });
+
+      if (currentView === 'list') {
+        document.getElementById('view-list').classList.remove('hidden');
+        renderListView();
+      } else if (currentView === 'month') {
+        document.getElementById('view-month').classList.remove('hidden');
+        renderMonthCalendar();
+      } else if (currentView === 'week') {
+        document.getElementById('view-week').classList.remove('hidden');
+        renderWeekCalendar();
+      }
+    }
+
+    // --- FILTERING ENGINE ---
+    function getFilteredSchedules() {
+      return schedules.filter(item => {
+        if (searchQuery.trim()) {
+          const q = searchQuery.toLowerCase();
+          const matchTitle = item.title.toLowerCase().includes(q);
+          const matchMember = item.members.some(m => m.toLowerCase().includes(q));
+          const matchNote = (item.note || '').toLowerCase().includes(q);
+          if (!matchTitle && !matchMember && !matchNote) return false;
+        }
+
+        if (filterCategory !== 'all' && item.category !== filterCategory) return false;
+        if (filterMember !== 'all' && !item.members.includes(filterMember)) return false;
+
+        if (filterStatus === 'uncompleted') {
+          const flow = STATUS_FLOWS[item.category] || STATUS_FLOWS.other;
+          const currentStatusObj = flow.find(s => s.key === item.status);
+          if (currentStatusObj && currentStatusObj.isDone) return false;
+        }
+
+        return true;
+      }).sort((a, b) => {
+        if (!a.date) return 1;
+        if (!b.date) return -1;
+        const dateTimeA = `${a.date} ${a.hour || '00'}:${a.minute || '00'}`;
+        const dateTimeB = `${b.date} ${b.hour || '00'}:${b.minute || '00'}`;
+        return new Date(dateTimeA) - new Date(dateTimeB);
+      });
+    }
+
+    // --- VIEW 1: LIST VIEW ---
+    function renderListView() {
+      const container = document.getElementById('list-container');
+      const emptyState = document.getElementById('list-empty-state');
+      const filtered = getFilteredSchedules();
+
+      if (filtered.length === 0) {
+        container.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+      container.innerHTML = filtered.map(item => createScheduleCardHTML(item)).join('');
+      attachCardEventListeners();
+    }
+
+    function createScheduleCardHTML(item) {
+      const cat = CATEGORIES[item.category] || CATEGORIES.other;
+      const flow = STATUS_FLOWS[item.category] || STATUS_FLOWS.other;
+      const statusObj = flow.find(s => s.key === item.status) || flow[0];
+      
+      const deadlineInfo = calculateDeadlineInfo(item);
+
+      let dateFormatted = '日付指定なし';
+      if (item.date) {
+        const d = new Date(item.date + 'T00:00:00');
+        const dayName = ['日','月','火','水','木','金','土'][d.getDay()];
+        const timePart = (item.hour && item.minute) ? ` ${item.hour}:${item.minute}` : '';
+        dateFormatted = `${d.getMonth() + 1}/${d.getDate()}(${dayName})${timePart}`;
+      }
+      
+      const memberBadges = item.members.map(m => 
+        `<span class="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px] hover:text-brand-600 cursor-pointer member-chip-click border border-slate-200" data-member="${m}">#${m}</span>`
+      ).join(' ');
+
+      const googleCalUrl = createGoogleCalendarUrl(item);
+
+      return `
+        <div class="clean-card rounded-xl p-3.5 sm:p-4 border-l-4 ${cat.borderColor} ${statusObj.isDone ? 'opacity-70 bg-slate-50/60' : 'bg-white'} transition hover:border-slate-300">
+          <div class="flex items-start justify-between gap-2 mb-1.5">
+            <div class="flex flex-wrap items-center gap-1.5">
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold border ${cat.badgeBg}">
+                <i class="${cat.icon} text-[10px]"></i> ${cat.label}
+              </span>
+              ${deadlineInfo.badgeHTML}
+            </div>
+
+            <div class="flex items-center gap-1">
+              <button class="btn-edit-item p-1.5 text-slate-400 hover:text-slate-700 transition text-xs" data-id="${item.id}" title="編集">
+                <i class="fa-solid fa-pen"></i>
+              </button>
+              <button class="btn-delete-item p-1.5 text-slate-400 hover:text-red-500 transition text-xs" data-id="${item.id}" title="削除">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </div>
+          </div>
+
+          <h3 class="text-sm sm:text-base font-bold text-slate-900 mb-1 leading-snug">
+            ${escapeHTML(item.title)}
+          </h3>
+
+          <div class="text-xs text-slate-600 font-mono mb-2 flex items-center gap-2">
+            <i class="fa-regular fa-clock text-slate-400"></i>
+            <span>${dateFormatted}</span>
+          </div>
+
+          ${memberBadges ? `<div class="flex flex-wrap items-center gap-1 mb-2.5">${memberBadges}</div>` : ''}
+
+          ${item.note ? `
+            <div class="bg-slate-50 rounded-lg p-2 text-xs text-slate-700 mb-3 border border-slate-200/80 flex items-start gap-2">
+              <i class="fa-regular fa-note-sticky text-amber-500 text-xs mt-0.5"></i>
+              <span class="whitespace-pre-line flex-1">${escapeHTML(item.note)}</span>
+            </div>
+          ` : ''}
+
+          <div class="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
+            <button class="btn-cycle-status flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-semibold transition ${statusObj.badgeClass}" 
+                    data-id="${item.id}">
+              <i class="fa-regular ${statusObj.isDone ? 'fa-circle-check' : 'fa-circle'} text-xs"></i>
+              <span>${statusObj.label}</span>
+              <i class="fa-solid fa-arrows-rotate text-[10px] ml-1 opacity-60"></i>
+            </button>
+
+            <div class="flex items-center gap-1.5">
+              ${item.url ? `
+                <a href="${escapeHTML(item.url)}" target="_blank" rel="noopener" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-medium transition flex items-center gap-1">
+                  <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i> 直リンク
+                </a>
+              ` : ''}
+
+              ${item.date ? `
+                <a href="${googleCalUrl}" target="_blank" rel="noopener" title="Googleカレンダーに追加" class="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs transition border border-slate-200">
+                  <i class="fa-brands fa-google"></i>
+                </a>
+                <button class="btn-download-ics p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs transition border border-slate-200" data-id="${item.id}" title=".icsファイルをダウンロード">
+                  <i class="fa-solid fa-calendar-plus"></i>
+                </button>
+              ` : ''}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // --- VIEW 2: MONTH CALENDAR VIEW ---
+    function renderMonthCalendar() {
+      const year = currentMonthDate.getFullYear();
+      const month = currentMonthDate.getMonth();
+      
+      document.getElementById('month-display-title').innerText = `${year}年 ${month + 1}月`;
+
+      const firstDay = new Date(year, month, 1).getDay();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      
+      const grid = document.getElementById('month-grid');
+      grid.innerHTML = '';
+
+      for (let i = 0; i < firstDay; i++) {
+        grid.innerHTML += `<div class="h-16 sm:h-20 bg-slate-100/40 rounded-lg"></div>`;
+      }
+
+      const filtered = getFilteredSchedules();
+      const todayStr = formatDateIso(new Date());
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const currentDateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        
+        const dayEvents = filtered.filter(item => item.date === currentDateStr);
+        const isToday = currentDateStr === todayStr;
+
+        const eventBars = dayEvents.slice(0, 2).map(ev => {
+          const cat = CATEGORIES[ev.category] || CATEGORIES.other;
+          return `<div class="truncate text-[9px] px-1 py-0.5 rounded text-white ${cat.barBg} font-medium">${escapeHTML(ev.title)}</div>`;
+        }).join('');
+
+        const overflow = dayEvents.length > 2 ? `<div class="text-[9px] text-brand-600 font-bold text-center">+${dayEvents.length - 2}件</div>` : '';
+
+        grid.innerHTML += `
+          <div class="calendar-day-cell h-16 sm:h-20 p-1 rounded-lg border ${isToday ? 'border-brand-500 bg-pink-50/40 font-bold' : 'border-slate-200 bg-white'} hover:border-slate-400 transition cursor-pointer flex flex-col justify-between overflow-hidden"
+               data-date="${currentDateStr}">
+            <div class="flex items-center justify-between">
+              <span class="text-xs ${isToday ? 'text-brand-600 font-bold' : 'text-slate-700'}">${day}</span>
+              ${dayEvents.length > 0 ? `<span class="w-1.5 h-1.5 rounded-full bg-brand-500"></span>` : ''}
+            </div>
+            <div class="space-y-0.5 mt-0.5 overflow-hidden">
+              ${eventBars}
+              ${overflow}
+            </div>
+          </div>
+        `;
+      }
+
+      document.querySelectorAll('.calendar-day-cell').forEach(cell => {
+        cell.addEventListener('click', () => {
+          showSelectedDayEvents(cell.dataset.date);
+        });
+      });
+    }
+
+    function showSelectedDayEvents(dateStr) {
+      const box = document.getElementById('month-selected-day-box');
+      const container = document.getElementById('selected-day-items');
+      const title = document.getElementById('selected-day-title');
+
+      const parts = dateStr.split('-');
+      title.querySelector('span').innerText = `${parseInt(parts[1])}月${parseInt(parts[2])}日の予定`;
+
+      const filtered = getFilteredSchedules().filter(item => item.date === dateStr);
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <p class="text-xs text-slate-500 py-2 text-center">この日の予定はありません</p>
+          <button onclick="openScheduleModalWithDate('${dateStr}')" class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-brand-600 rounded-lg text-xs font-bold border border-slate-200 transition">
+            <i class="fa-solid fa-plus mr-1"></i>この日に予定を追加
+          </button>
+        `;
+      } else {
+        container.innerHTML = filtered.map(item => createScheduleCardHTML(item)).join('');
+        attachCardEventListeners();
+      }
+
+      box.classList.remove('hidden');
+      box.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // --- VIEW 3: WEEK CALENDAR VIEW ---
+    function renderWeekCalendar() {
+      const weekContainer = document.getElementById('week-list-container');
+      weekContainer.innerHTML = '';
+
+      const startOfWeek = new Date(currentWeekDate);
+      startOfWeek.setDate(currentWeekDate.getDate() - currentWeekDate.getDay());
+
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(startOfWeek.getDate() + 6);
+
+      document.getElementById('week-display-title').innerText = 
+        `${startOfWeek.getMonth() + 1}/${startOfWeek.getDate()} 〜 ${endOfWeek.getMonth() + 1}/${endOfWeek.getDate()}`;
+
+      const filtered = getFilteredSchedules();
+      const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+      const todayStr = formatDateIso(new Date());
+
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(startOfWeek);
+        d.setDate(startOfWeek.getDate() + i);
+        const dateStr = formatDateIso(d);
+
+        const dayEvents = filtered.filter(item => item.date === dateStr);
+        const isToday = dateStr === todayStr;
+
+        const dayHTML = `
+          <div class="clean-card rounded-xl p-3 border ${isToday ? 'border-brand-500 bg-pink-50/20' : 'border-slate-200'}">
+            <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
+              <div class="flex items-center gap-2">
+                <span class="text-sm font-bold ${i === 0 ? 'text-red-600' : i === 6 ? 'text-sky-600' : 'text-slate-800'}">
+                  ${d.getMonth() + 1}/${d.getDate()} (${dayNames[i]})
+                </span>
+                ${isToday ? `<span class="px-1.5 py-0.5 rounded bg-brand-600 text-white text-[9px] font-bold">TODAY</span>` : ''}
+              </div>
+              <span class="text-xs text-slate-500 font-mono">${dayEvents.length} 件</span>
+            </div>
+
+            <div class="space-y-2">
+              ${dayEvents.length === 0 ? `
+                <p class="text-[11px] text-slate-400 italic py-1">予定なし</p>
+              ` : dayEvents.map(item => createScheduleCardHTML(item)).join('')}
+            </div>
+          </div>
+        `;
+
+        weekContainer.innerHTML += dayHTML;
+      }
+
+      attachCardEventListeners();
+    }
+
+    // --- DEADLINE / COUNTDOWN CALCULATOR ---
+    function calculateDeadlineInfo(item) {
+      if (!item.date || !item.hour || !item.minute) return { badgeHTML: '' };
+      
+      const targetDate = new Date(`${item.date}T${item.hour}:${item.minute}:00`);
+      const diffMs = targetDate - new Date();
+
+      if (diffMs <= 0) {
+        return { badgeHTML: `<span class="px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 border border-slate-200 text-[10px]">終了</span>` };
+      }
+
+      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+      const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+
+      if (diffHours < 24) {
+        return {
+          badgeHTML: `<span class="px-2 py-0.5 rounded bg-red-100 text-red-700 border border-red-300 text-[10px] font-bold animate-pulse-subtle">
+            <i class="fa-solid fa-clock text-[9px] mr-1"></i>あと ${diffHours}時間${diffMins}分
+          </span>`
+        };
+      } else if (diffHours < 72) {
+        const days = Math.floor(diffHours / 24);
+        return {
+          badgeHTML: `<span class="px-2 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-300 text-[10px] font-medium">
+            あと ${days}日
+          </span>`
+        };
+      }
+
+      return { badgeHTML: '' };
+    }
+
+    function checkUrgentAlerts() {
+      const urgentItems = schedules.filter(item => {
+        if (!item.date || !item.hour || !item.minute) return false;
+        const targetDate = new Date(`${item.date}T${item.hour}:${item.minute}:00`);
+        const diffMs = targetDate - new Date();
+        return diffMs > 0 && diffMs < 24 * 3600 * 1000;
+      });
+
+      const banner = document.getElementById('urgent-alert-banner');
+      const text = document.getElementById('urgent-alert-text');
+
+      if (urgentItems.length > 0) {
+        banner.classList.remove('hidden');
+        text.innerText = `締切24h以内の予定が ${urgentItems.length} 件あります！（${urgentItems[0].title} など）`;
+      } else {
+        banner.classList.add('hidden');
+      }
+    }
+
+    // --- CALENDAR EXPORT HELPERS ---
+    function createGoogleCalendarUrl(item) {
+      if (!item.date) return '#';
+      const timeStr = (item.hour && item.minute) ? `T${item.hour}${item.minute}00` : 'T000000';
+      const startIso = item.date.replace(/-/g, '') + timeStr;
+      
+      const title = encodeURIComponent(`[推し活] ${item.title}`);
+      const details = encodeURIComponent(`メモ: ${item.note || 'なし'}\nURL: ${item.url || 'なし'}`);
+
+      return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${startIso}/${startIso}&details=${details}`;
+    }
+
+    function downloadIcsFile(item) {
+      if (!item.date) return;
+      const timeStr = (item.hour && item.minute) ? `T${item.hour}${item.minute}00` : 'T000000';
+      const startIso = item.date.replace(/-/g, '') + timeStr;
+
+      const csContent = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "PRODID:-//Oshikatsu Schedule Manager//JA",
+        "BEGIN:VEVENT",
+        `SUMMARY:[推し活] ${item.title}`,
+        `DESCRIPTION:${item.note || ''} ${item.url || ''}`,
+        `DTSTART:${startIso}`,
+        `DTEND:${startIso}`,
+        "END:VEVENT",
+        "END:VCALENDAR"
+      ].join("\n");
+
+      const blob = new Blob([csContent], { type: 'text/calendar;charset=utf-8' });
+      const link = document.createElement('a');
+      link.href = window.URL.createObjectURL(blob);
+      link.setAttribute('download', `oshi_schedule_${item.id}.ics`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    // --- EVENT HANDLERS ---
+    function initEventListeners() {
+      document.querySelectorAll('.view-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          currentView = btn.dataset.view;
+          renderCurrentView();
+        });
+      });
+
+      document.getElementById('search-input').addEventListener('input', (e) => {
+        searchQuery = e.target.value;
+        renderCurrentView();
+      });
+
+      const uncollectedBtn = document.getElementById('quick-uncollected-toggle');
+      uncollectedBtn.addEventListener('click', () => {
+        if (filterStatus === 'uncompleted') {
+          filterStatus = 'all';
+          uncollectedBtn.classList.remove('bg-brand-50', 'border-brand-300', 'text-brand-700');
+          uncollectedBtn.classList.add('bg-white', 'text-slate-600');
+        } else {
+          filterStatus = 'uncompleted';
+          uncollectedBtn.classList.add('bg-brand-50', 'border-brand-300', 'text-brand-700');
+          uncollectedBtn.classList.remove('bg-white', 'text-slate-600');
+        }
+        renderActiveFilters();
+        renderCurrentView();
+      });
+
+      document.getElementById('btn-add-schedule').addEventListener('click', () => openScheduleModal());
+      document.getElementById('btn-quick-add-bottom').addEventListener('click', () => openScheduleModal());
+      document.getElementById('btn-close-schedule-modal').addEventListener('click', () => closeScheduleModal());
+      document.getElementById('btn-cancel-schedule').addEventListener('click', () => closeScheduleModal());
+
+      document.getElementById('form-category').addEventListener('change', (e) => {
+        updateModalStatusOptions(e.target.value);
+      });
+
+      document.getElementById('form-schedule').addEventListener('submit', (e) => {
+        e.preventDefault();
+        saveScheduleItem();
+      });
+
+      document.getElementById('btn-open-filter').addEventListener('click', openFilterModal);
+      document.getElementById('btn-close-filter-modal').addEventListener('click', closeFilterModal);
+      document.getElementById('btn-reset-filters').addEventListener('click', () => {
+        filterCategory = 'all';
+        filterMember = 'all';
+        filterStatus = 'all';
+        searchQuery = '';
+        document.getElementById('search-input').value = '';
+        renderActiveFilters();
+        closeFilterModal();
+        renderCurrentView();
+      });
+      document.getElementById('btn-apply-filters').addEventListener('click', () => {
+        closeFilterModal();
+        renderActiveFilters();
+        renderCurrentView();
+      });
+
+      document.getElementById('month-prev-btn').addEventListener('click', () => {
+        currentMonthDate.setMonth(currentMonthDate.getMonth() - 1);
+        renderMonthCalendar();
+      });
+      document.getElementById('month-next-btn').addEventListener('click', () => {
+        currentMonthDate.setMonth(currentMonthDate.getMonth() + 1);
+        renderMonthCalendar();
+      });
+
+      document.getElementById('week-prev-btn').addEventListener('click', () => {
+        currentWeekDate.setDate(currentWeekDate.getDate() - 7);
+        renderWeekCalendar();
+      });
+      document.getElementById('week-next-btn').addEventListener('click', () => {
+        currentWeekDate.setDate(currentWeekDate.getDate() + 7);
+        renderWeekCalendar();
+      });
+    }
+
+    function attachCardEventListeners() {
+      document.querySelectorAll('.btn-cycle-status').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.dataset.id;
+          const item = schedules.find(s => s.id === id);
+          if (!item) return;
+
+          const flow = STATUS_FLOWS[item.category] || STATUS_FLOWS.other;
+          const currentIndex = flow.findIndex(s => s.key === item.status);
+          const nextIndex = (currentIndex + 1) % flow.length;
+          item.status = flow[nextIndex].key;
+
+          renderCurrentView();
+          checkUrgentAlerts();
+        });
+      });
+
+      document.querySelectorAll('.btn-edit-item').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.dataset.id;
+          const item = schedules.find(s => s.id === id);
+          if (item) openScheduleModal(item);
+        });
+      });
+
+      document.querySelectorAll('.btn-delete-item').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.dataset.id;
+          schedules = schedules.filter(s => s.id !== id);
+          renderCurrentView();
+          checkUrgentAlerts();
+        });
+      });
+
+      document.querySelectorAll('.btn-download-ics').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.dataset.id;
+          const item = schedules.find(s => s.id === id);
+          if (item) downloadIcsFile(item);
+        });
+      });
+
+      document.querySelectorAll('.member-chip-click').forEach(chip => {
+        chip.addEventListener('click', (e) => {
+          e.stopPropagation();
+          filterMember = chip.dataset.member;
+          renderActiveFilters();
+          renderCurrentView();
+        });
+      });
+    }
+
+    // --- MODAL HANDLERS ---
+    function openScheduleModal(itemToEdit = null) {
+      const modal = document.getElementById('modal-schedule');
+      const modalTitle = document.getElementById('modal-title').querySelector('span');
+
+      if (itemToEdit) {
+        modalTitle.innerText = '予定の編集';
+        document.getElementById('edit-id').value = itemToEdit.id;
+        document.getElementById('form-title').value = itemToEdit.title;
+        document.getElementById('form-category').value = itemToEdit.category || 'tv';
+        document.getElementById('form-members').value = itemToEdit.members ? itemToEdit.members.join(', ') : '';
+        document.getElementById('form-date').value = itemToEdit.date || '';
+        document.getElementById('form-hour').value = itemToEdit.hour || '';
+        document.getElementById('form-minute').value = itemToEdit.minute || '';
+        document.getElementById('form-url').value = itemToEdit.url || '';
+        document.getElementById('form-note').value = itemToEdit.note || '';
+
+        updateModalStatusOptions(itemToEdit.category || 'tv', itemToEdit.status);
+      } else {
+        modalTitle.innerText = '予定の追加 (名前のみで登録可)';
+        document.getElementById('edit-id').value = '';
+        document.getElementById('form-schedule').reset();
+        
+        // Default date to today for convenience
+        document.getElementById('form-date').value = formatDateIso(new Date());
+        updateModalStatusOptions('tv');
+      }
+
+      modal.classList.remove('hidden');
+    }
+
+    function openScheduleModalWithDate(dateStr) {
+      openScheduleModal();
+      document.getElementById('form-date').value = dateStr;
+    }
+
+    function closeScheduleModal() {
+      document.getElementById('modal-schedule').classList.add('hidden');
+    }
+
+    function updateModalStatusOptions(categoryKey, currentStatusKey = null) {
+      const statusSelect = document.getElementById('form-status');
+      const flow = STATUS_FLOWS[categoryKey] || STATUS_FLOWS.other;
+
+      statusSelect.innerHTML = flow.map(s => 
+        `<option value="${s.key}" ${currentStatusKey === s.key ? 'selected' : ''}>${s.label}</option>`
+      ).join('');
+    }
+
+    function saveScheduleItem() {
+      const id = document.getElementById('edit-id').value;
+      const title = document.getElementById('form-title').value.trim();
+      const category = document.getElementById('form-category').value || 'other';
+      const membersRaw = document.getElementById('form-members').value;
+      const date = document.getElementById('form-date').value || '';
+      const hour = document.getElementById('form-hour').value || '';
+      const minute = document.getElementById('form-minute').value || '';
+      const status = document.getElementById('form-status').value;
+      const url = document.getElementById('form-url').value.trim();
+      const note = document.getElementById('form-note').value.trim();
+
+      const members = membersRaw ? membersRaw.split(',').map(m => m.trim()).filter(Boolean) : [];
+
+      if (id) {
+        const index = schedules.findIndex(s => s.id === id);
+        if (index !== -1) {
+          schedules[index] = { id, title, category, members, date, hour, minute, status, url, note };
+        }
+      } else {
+        const newId = 's_' + Date.now();
+        schedules.unshift({ id: newId, title, category, members, date, hour, minute, status, url, note });
+      }
+
+      closeScheduleModal();
+      renderCurrentView();
+      checkUrgentAlerts();
+    }
+
+    function openFilterModal() {
+      const categoryContainer = document.getElementById('filter-category-chips');
+      const memberContainer = document.getElementById('filter-member-chips');
+
+      categoryContainer.innerHTML = `
+        <button data-cat="all" class="filter-chip-cat px-2.5 py-1 rounded-lg border ${filterCategory === 'all' ? 'bg-brand-600 text-white border-brand-600 font-bold' : 'bg-slate-50 text-slate-700 border-slate-200'}">
+          すべて
+        </button>
+      ` + Object.keys(CATEGORIES).map(k => `
+        <button data-cat="${k}" class="filter-chip-cat px-2.5 py-1 rounded-lg border ${filterCategory === k ? 'bg-brand-600 text-white border-brand-600 font-bold' : 'bg-slate-50 text-slate-700 border-slate-200'}">
+          ${CATEGORIES[k].label}
+        </button>
+      `).join('');
+
+      const allMembers = Array.from(new Set(schedules.flatMap(s => s.members)));
+      memberContainer.innerHTML = `
+        <button data-mem="all" class="filter-chip-mem px-2.5 py-1 rounded-lg border ${filterMember === 'all' ? 'bg-brand-600 text-white border-brand-600 font-bold' : 'bg-slate-50 text-slate-700 border-slate-200'}">
+          全員
+        </button>
+      ` + allMembers.map(m => `
+        <button data-mem="${m}" class="filter-chip-mem px-2.5 py-1 rounded-lg border ${filterMember === m ? 'bg-brand-600 text-white border-brand-600 font-bold' : 'bg-slate-50 text-slate-700 border-slate-200'}">
+          #${m}
+        </button>
+      `).join('');
+
+      document.querySelectorAll('.filter-chip-cat').forEach(b => {
+        b.addEventListener('click', () => {
+          filterCategory = b.dataset.cat;
+          openFilterModal();
+        });
+      });
+
+      document.querySelectorAll('.filter-chip-mem').forEach(b => {
+        b.addEventListener('click', () => {
+          filterMember = b.dataset.mem;
+          openFilterModal();
+        });
+      });
+
+      document.querySelectorAll('.filter-status-btn').forEach(b => {
+        if (b.dataset.statusFilter === filterStatus) {
+          b.classList.add('bg-brand-600', 'text-white', 'border-brand-600', 'font-bold');
+          b.classList.remove('bg-slate-50', 'text-slate-700');
+        } else {
+          b.classList.remove('bg-brand-600', 'text-white', 'border-brand-600', 'font-bold');
+          b.classList.add('bg-slate-50', 'text-slate-700');
+        }
+        b.onclick = () => {
+          filterStatus = b.dataset.statusFilter;
+          openFilterModal();
+        };
+      });
+
+      document.getElementById('modal-filter').classList.remove('hidden');
+    }
+
+    function closeFilterModal() {
+      document.getElementById('modal-filter').classList.add('hidden');
+    }
+
+    function renderActiveFilters() {
+      const bar = document.getElementById('active-filters-bar');
+      const dot = document.getElementById('filter-active-dot');
+      let chips = [];
+
+      if (filterCategory !== 'all') {
+        chips.push(`<span class="px-2 py-0.5 rounded-md bg-brand-50 text-brand-700 border border-brand-200 font-bold">カテゴリ: ${CATEGORIES[filterCategory]?.label}</span>`);
+      }
+      if (filterMember !== 'all') {
+        chips.push(`<span class="px-2 py-0.5 rounded-md bg-brand-50 text-brand-700 border border-brand-200 font-bold">メンバー: #${filterMember}</span>`);
+      }
+      if (filterStatus === 'uncompleted') {
+        chips.push(`<span class="px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200 font-bold">未回収のみ</span>`);
+      }
+
+      if (chips.length > 0) {
+        bar.innerHTML = chips.join('') + `
+          <button id="btn-clear-bar-filters" class="text-slate-500 hover:text-brand-600 ml-1 underline text-[10px] font-bold">リセット</button>
+        `;
+        bar.classList.remove('hidden');
+        bar.classList.add('flex');
+        dot.classList.remove('hidden');
+
+        document.getElementById('btn-clear-bar-filters')?.addEventListener('click', () => {
+          filterCategory = 'all';
+          filterMember = 'all';
+          filterStatus = 'all';
+          renderActiveFilters();
+          renderCurrentView();
+        });
+      } else {
+        bar.classList.add('hidden');
+        bar.classList.remove('flex');
+        dot.classList.add('hidden');
+      }
+    }
+
+    function escapeHTML(str) {
+      if (!str) return '';
+      return str.replace(/[&<>'"]/g, 
+        tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+      );
+    }
+  </script>
+</body>
+</html>
