@@ -520,13 +520,76 @@
         };
 
         window.onload = function() {
+            if (events.length === 0 && regulars.length === 0) {
+                seedInitialData();
+            }
             initDayPicker();
             renderCurrentView();
         };
 
+        function seedInitialData() {
+            const today = new Date();
+            const y = today.getFullYear();
+            const m = String(today.getMonth() + 1).padStart(2, '0');
+            const d = String(today.getDate()).padStart(2, '0');
+            const todayStr = `${y}-${m}-${d}`;
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 3);
+            const tmY = tomorrow.getFullYear();
+            const tmM = String(tomorrow.getMonth() + 1).padStart(2, '0');
+            const tmD = String(tomorrow.getDate()).padStart(2, '0');
+            const deadlineStr = `${tmY}-${tmM}-${tmD}`;
+
+            events = [
+                {
+                    id: '1',
+                    title: '新曲デジタル配信スタート',
+                    category: 'テレビ・配信',
+                    status: '未対応',
+                    startDate: todayStr,
+                    startTime: '00:00',
+                    endDate: '',
+                    endTime: '',
+                    isDeadline: false,
+                    appStart: '',
+                    appDeadline: '',
+                    appResult: '',
+                    link: 'https://example.com',
+                    memo: 'サブスク各社で一斉配信開始！'
+                },
+                {
+                    id: '2',
+                    title: 'アリーナツアー 抽選応募',
+                    category: '応募',
+                    status: '未対応',
+                    startDate: todayStr,
+                    startTime: '',
+                    endDate: deadlineStr,
+                    endTime: '',
+                    isDeadline: false,
+                    appStart: `${todayStr}T10:00`,
+                    appDeadline: `${deadlineStr}T23:59`,
+                    appResult: `${tmY}-${tmM}-25T15:00`,
+                    link: 'https://example.com/ticket',
+                    memo: '第1希望〜第3希望まで忘れずに。'
+                }
+            ];
+            saveData();
+        }
+
         function saveData() {
             localStorage.setItem('oshikatsu_events_v5', JSON.stringify(events));
             localStorage.setItem('oshikatsu_regulars_v5', JSON.stringify(regulars));
+        }
+
+        // Quick status toggle function
+        function toggleEventStatus(id, eventObj) {
+            if (eventObj) eventObj.stopPropagation();
+            const ev = events.find(item => item.id === id);
+            if (!ev) return;
+            ev.status = (ev.status === '対応済') ? '未対応' : '対応済';
+            saveData();
+            renderCurrentView();
         }
 
         // Custom Message Box
@@ -691,7 +754,15 @@
             return events.filter(ev => {
                 if (catFilter && ev.category !== catFilter) return false;
                 if (statFilter && ev.status !== statFilter) return false;
-                if (unhandledOnly && ev.status !== '未対応') return false;
+                if (unhandledOnly && ev.status !== '未対応') {
+                    // Special rule: if "未対応のみ" is checked, "応募" items that are "対応済" 
+                    // should still show up if their result date has not passed yet.
+                    if (ev.category === '応募' && ev.status === '対応済') {
+                        if (!isAppResultStillValid(ev)) return false;
+                    } else {
+                        return false;
+                    }
+                }
                 if (keyword) {
                     const matchTitle = ev.title.toLowerCase().includes(keyword);
                     const matchMemo = (ev.memo || '').toLowerCase().includes(keyword);
@@ -700,6 +771,13 @@
                 }
                 return true;
             });
+        }
+
+        function isAppResultStillValid(ev) {
+            if (!ev.appResult) return false;
+            const todayStr = formatDateKey(new Date());
+            const resDate = ev.appResult.split('T')[0];
+            return resDate >= todayStr;
         }
 
         // --- Month View Logic ---
@@ -753,42 +831,55 @@
                     const endD = ev.appDeadline ? ev.appDeadline.split('T')[0] : ev.endDate;
                     const resD = ev.appResult ? ev.appResult.split('T')[0] : null;
 
-                    if (dateStr === startD) {
-                        count++;
-                        if (count <= 3) {
-                            itemsHtml += `
-                                <div onclick="event.stopPropagation(); openDetailModal('${ev.id}')" class="text-[11px] font-medium px-1.5 py-0.5 rounded-lg border bg-rose-50 text-rose-900 border-rose-200 mb-1 cursor-pointer hover:opacity-80 transition shadow-2xs truncate flex items-center">
-                                    <span class="text-[9px] bg-rose-600 text-white px-1 rounded mr-1 font-bold">開始</span>${escapeHtml(ev.title)}
-                                </div>
-                            `;
+                    if (ev.status === '対応済') {
+                        // Handled app item: show ONLY result date if valid
+                        if (resD && dateStr === resD && isAppResultStillValid(ev)) {
+                            count++;
+                            if (count <= 3) {
+                                itemsHtml += `
+                                    <div onclick="event.stopPropagation(); openDetailModal('${ev.id}')" class="text-[11px] font-medium px-1.5 py-0.5 rounded-lg border bg-rose-50 text-rose-900 border-rose-200 mb-1 cursor-pointer hover:opacity-80 transition shadow-2xs truncate flex items-center">
+                                        <span class="text-[9px] bg-amber-600 text-white px-1 rounded mr-1 font-bold">当落</span>${escapeHtml(ev.title)}
+                                    </div>
+                                `;
+                            }
                         }
-                    } else if (dateStr === endD) {
-                        count++;
-                        if (count <= 3) {
-                            itemsHtml += `
-                                <div onclick="event.stopPropagation(); openDetailModal('${ev.id}')" class="text-[11px] font-medium px-1.5 py-0.5 rounded-lg border bg-rose-50 text-rose-900 border-rose-200 mb-1 cursor-pointer hover:opacity-80 transition shadow-2xs truncate flex items-center">
-                                    <span class="text-[9px] bg-rose-700 text-white px-1 rounded mr-1 font-bold">締切</span>${escapeHtml(ev.title)}
-                                </div>
-                            `;
-                        }
-                    } else if (resD && dateStr === resD) {
-                        count++;
-                        if (count <= 3) {
-                            itemsHtml += `
-                                <div onclick="event.stopPropagation(); openDetailModal('${ev.id}')" class="text-[11px] font-medium px-1.5 py-0.5 rounded-lg border bg-rose-50 text-rose-900 border-rose-200 mb-1 cursor-pointer hover:opacity-80 transition shadow-2xs truncate flex items-center">
-                                    <span class="text-[9px] bg-amber-600 text-white px-1 rounded mr-1 font-bold">当落</span>${escapeHtml(ev.title)}
-                                </div>
-                            `;
-                        }
-                    } else if (startD && endD && dateStr > startD && dateStr < endD) {
-                        // Between start and deadline: show line/band indicator, no full title
-                        count++;
-                        if (count <= 3) {
-                            itemsHtml += `
-                                <div onclick="event.stopPropagation(); openDetailModal('${ev.id}')" class="text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-rose-100/70 text-rose-800 mb-1 cursor-pointer hover:opacity-80 transition truncate flex items-center">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-rose-500 mr-1.5 inline-block"></span><span class="truncate opacity-80">${escapeHtml(ev.title)}期間</span>
-                                </div>
-                            `;
+                    } else {
+                        if (dateStr === startD) {
+                            count++;
+                            if (count <= 3) {
+                                itemsHtml += `
+                                    <div onclick="event.stopPropagation(); openDetailModal('${ev.id}')" class="text-[11px] font-medium px-1.5 py-0.5 rounded-lg border bg-rose-50 text-rose-900 border-rose-200 mb-1 cursor-pointer hover:opacity-80 transition shadow-2xs truncate flex items-center">
+                                        <span class="text-[9px] bg-rose-600 text-white px-1 rounded mr-1 font-bold">開始</span>${escapeHtml(ev.title)}
+                                    </div>
+                                `;
+                            }
+                        } else if (dateStr === endD) {
+                            count++;
+                            if (count <= 3) {
+                                itemsHtml += `
+                                    <div onclick="event.stopPropagation(); openDetailModal('${ev.id}')" class="text-[11px] font-medium px-1.5 py-0.5 rounded-lg border bg-rose-50 text-rose-900 border-rose-200 mb-1 cursor-pointer hover:opacity-80 transition shadow-2xs truncate flex items-center">
+                                        <span class="text-[9px] bg-rose-700 text-white px-1 rounded mr-1 font-bold">締切</span>${escapeHtml(ev.title)}
+                                    </div>
+                                `;
+                            }
+                        } else if (resD && dateStr === resD) {
+                            count++;
+                            if (count <= 3) {
+                                itemsHtml += `
+                                    <div onclick="event.stopPropagation(); openDetailModal('${ev.id}')" class="text-[11px] font-medium px-1.5 py-0.5 rounded-lg border bg-rose-50 text-rose-900 border-rose-200 mb-1 cursor-pointer hover:opacity-80 transition shadow-2xs truncate flex items-center">
+                                        <span class="text-[9px] bg-amber-600 text-white px-1 rounded mr-1 font-bold">当落</span>${escapeHtml(ev.title)}
+                                    </div>
+                                `;
+                            }
+                        } else if (startD && endD && dateStr > startD && dateStr < endD) {
+                            count++;
+                            if (count <= 3) {
+                                itemsHtml += `
+                                    <div onclick="event.stopPropagation(); openDetailModal('${ev.id}')" class="text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-rose-100/70 text-rose-800 mb-1 cursor-pointer hover:opacity-80 transition truncate flex items-center">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-rose-500 mr-1.5 inline-block"></span><span class="truncate opacity-80">${escapeHtml(ev.title)}期間</span>
+                                    </div>
+                                `;
+                            }
                         }
                     }
                 } else {
@@ -856,21 +947,27 @@
                         const endD = ev.appDeadline ? ev.appDeadline.split('T')[0] : ev.endDate;
                         const resD = ev.appResult ? ev.appResult.split('T')[0] : null;
 
-                        if (dateStr === startD) {
-                            dayItemsHtml += renderAppBadgeMini(ev, '開始', 'bg-rose-50 text-rose-900 border-rose-200');
-                        } else if (dateStr === endD) {
-                            dayItemsHtml += renderAppBadgeMini(ev, '締切', 'bg-rose-50 text-rose-900 border-rose-200');
-                        } else if (resD && dateStr === resD) {
-                            dayItemsHtml += renderAppBadgeMini(ev, '当落', 'bg-amber-50 text-amber-900 border-amber-200');
-                        } else if (startD && endD && dateStr > startD && dateStr < endD) {
-                            dayItemsHtml += `
-                                <div onclick="openDetailModal('${ev.id}')" class="p-2 rounded-xl border border-rose-100 bg-rose-50/50 text-xs cursor-pointer hover:shadow-sm transition">
-                                    <div class="text-[10px] text-rose-700 font-bold flex items-center">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-rose-500 mr-1.5 inline-block"></span>応募期間中
+                        if (ev.status === '対応済') {
+                            if (resD && dateStr === resD && isAppResultStillValid(ev)) {
+                                dayItemsHtml += renderAppBadgeMini(ev, '当落', 'bg-amber-50 text-amber-900 border-amber-200');
+                            }
+                        } else {
+                            if (dateStr === startD) {
+                                dayItemsHtml += renderAppBadgeMini(ev, '開始', 'bg-rose-50 text-rose-900 border-rose-200');
+                            } else if (dateStr === endD) {
+                                dayItemsHtml += renderAppBadgeMini(ev, '締切', 'bg-rose-50 text-rose-900 border-rose-200');
+                            } else if (resD && dateStr === resD) {
+                                dayItemsHtml += renderAppBadgeMini(ev, '当落', 'bg-amber-50 text-amber-900 border-amber-200');
+                            } else if (startD && endD && dateStr > startD && dateStr < endD) {
+                                dayItemsHtml += `
+                                    <div onclick="openDetailModal('${ev.id}')" class="p-2 rounded-xl border border-rose-100 bg-rose-50/50 text-xs cursor-pointer hover:shadow-sm transition">
+                                        <div class="text-[10px] text-rose-700 font-bold flex items-center">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-rose-500 mr-1.5 inline-block"></span>応募期間中
+                                        </div>
+                                        <div class="font-bold truncate opacity-80">${escapeHtml(ev.title)}</div>
                                     </div>
-                                    <div class="font-bold truncate opacity-80">${escapeHtml(ev.title)}</div>
-                                </div>
-                            `;
+                                `;
+                            }
                         }
                     } else {
                         if (isDateInEventRange(dateStr, ev)) {
@@ -911,25 +1008,31 @@
                     const endD = ev.appDeadline ? ev.appDeadline.split('T')[0] : ev.endDate;
                     const resD = ev.appResult ? ev.appResult.split('T')[0] : null;
 
-                    if (currentDayDateStr === startD) {
-                        dayItemsHtml += renderAppCardFull(ev, '開始', 'bg-rose-50 text-rose-700 border-rose-200');
-                    } else if (currentDayDateStr === endD) {
-                        dayItemsHtml += renderAppCardFull(ev, '締切', 'bg-rose-700 text-white border-rose-700');
-                    } else if (resD && currentDayDateStr === resD) {
-                        dayItemsHtml += renderAppCardFull(ev, '当落', 'bg-amber-600 text-white border-amber-600');
-                    } else if (startD && endD && currentDayDateStr > startD && currentDayDateStr < endD) {
-                        dayItemsHtml += `
-                            <div onclick="openDetailModal('${ev.id}')" class="bg-white border border-rose-200 rounded-2xl p-4 flex items-center justify-between cursor-pointer transition shadow-2xs">
-                                <div>
-                                    <div class="flex items-center space-x-2 mb-1">
-                                        <span class="text-xs font-bold px-2.5 py-0.5 rounded-xl border bg-rose-50 text-rose-800 border-rose-200">応募</span>
-                                        <span class="text-xs font-bold px-2.5 py-0.5 rounded-xl bg-rose-100 text-rose-800">応募期間中 (〜${endD})</span>
+                    if (ev.status === '対応済') {
+                        if (resD && currentDayDateStr === resD && isAppResultStillValid(ev)) {
+                            dayItemsHtml += renderAppCardFull(ev, '当落', 'bg-amber-600 text-white border-amber-600');
+                        }
+                    } else {
+                        if (currentDayDateStr === startD) {
+                            dayItemsHtml += renderAppCardFull(ev, '開始', 'bg-rose-50 text-rose-700 border-rose-200');
+                        } else if (currentDayDateStr === endD) {
+                            dayItemsHtml += renderAppCardFull(ev, '締切', 'bg-rose-700 text-white border-rose-700');
+                        } else if (resD && currentDayDateStr === resD) {
+                            dayItemsHtml += renderAppCardFull(ev, '当落', 'bg-amber-600 text-white border-amber-600');
+                        } else if (startD && endD && currentDayDateStr > startD && currentDayDateStr < endD) {
+                            dayItemsHtml += `
+                                <div onclick="openDetailModal('${ev.id}')" class="bg-white border border-rose-200 rounded-2xl p-4 flex items-center justify-between cursor-pointer transition shadow-2xs">
+                                    <div>
+                                        <div class="flex items-center space-x-2 mb-1">
+                                            <span class="text-xs font-bold px-2.5 py-0.5 rounded-xl border bg-rose-50 text-rose-800 border-rose-200">応募</span>
+                                            <span class="text-xs font-bold px-2.5 py-0.5 rounded-xl bg-rose-100 text-rose-800">応募期間中 (〜${endD})</span>
+                                        </div>
+                                        <h3 class="text-base font-bold text-slate-800">${escapeHtml(ev.title)}</h3>
                                     </div>
-                                    <h3 class="text-base font-bold text-slate-800">${escapeHtml(ev.title)}</h3>
+                                    <span class="text-xs font-bold text-teal-600 bg-teal-50 px-3 py-1.5 rounded-xl border border-teal-200 whitespace-nowrap">詳細を見る</span>
                                 </div>
-                                <span class="text-xs font-bold text-teal-600 bg-teal-50 px-3 py-1.5 rounded-xl border border-teal-200 whitespace-nowrap">詳細を見る</span>
-                            </div>
-                        `;
+                            `;
+                        }
                     }
                 } else {
                     if (isDateInEventRange(currentDayDateStr, ev)) {
@@ -964,25 +1067,31 @@
                     const endD = ev.appDeadline ? ev.appDeadline.split('T')[0] : ev.endDate;
                     const resD = ev.appResult ? ev.appResult.split('T')[0] : null;
 
-                    if (dateStr === startD) {
-                        dayItemsHtml += renderAppCardFull(ev, '開始', 'bg-rose-50 text-rose-700 border-rose-200');
-                    } else if (dateStr === endD) {
-                        dayItemsHtml += renderAppCardFull(ev, '締切', 'bg-rose-700 text-white border-rose-700');
-                    } else if (resD && dateStr === resD) {
-                        dayItemsHtml += renderAppCardFull(ev, '当落', 'bg-amber-600 text-white border-amber-600');
-                    } else if (startD && endD && dateStr > startD && dateStr < endD) {
-                        dayItemsHtml += `
-                            <div onclick="openDetailModal('${ev.id}')" class="bg-white border border-rose-200 rounded-2xl p-4 flex items-center justify-between cursor-pointer transition shadow-2xs">
-                                <div>
-                                    <div class="flex items-center space-x-2 mb-1">
-                                        <span class="text-xs font-bold px-2.5 py-0.5 rounded-xl border bg-rose-50 text-rose-800 border-rose-200">応募</span>
-                                        <span class="text-xs font-bold px-2.5 py-0.5 rounded-xl bg-rose-100 text-rose-800">応募期間中</span>
+                    if (ev.status === '対応済') {
+                        if (resD && dateStr === resD && isAppResultStillValid(ev)) {
+                            dayItemsHtml += renderAppCardFull(ev, '当落', 'bg-amber-600 text-white border-amber-600');
+                        }
+                    } else {
+                        if (dateStr === startD) {
+                            dayItemsHtml += renderAppCardFull(ev, '開始', 'bg-rose-50 text-rose-700 border-rose-200');
+                        } else if (dateStr === endD) {
+                            dayItemsHtml += renderAppCardFull(ev, '締切', 'bg-rose-700 text-white border-rose-700');
+                        } else if (resD && dateStr === resD) {
+                            dayItemsHtml += renderAppCardFull(ev, '当落', 'bg-amber-600 text-white border-amber-600');
+                        } else if (startD && endD && dateStr > startD && dateStr < endD) {
+                            dayItemsHtml += `
+                                <div onclick="openDetailModal('${ev.id}')" class="bg-white border border-rose-200 rounded-2xl p-4 flex items-center justify-between cursor-pointer transition shadow-2xs">
+                                    <div>
+                                        <div class="flex items-center space-x-2 mb-1">
+                                            <span class="text-xs font-bold px-2.5 py-0.5 rounded-xl border bg-rose-50 text-rose-800 border-rose-200">応募</span>
+                                            <span class="text-xs font-bold px-2.5 py-0.5 rounded-xl bg-rose-100 text-rose-800">応募期間中</span>
+                                        </div>
+                                        <h3 class="text-base font-bold text-slate-800">${escapeHtml(ev.title)}</h3>
                                     </div>
-                                    <h3 class="text-base font-bold text-slate-800">${escapeHtml(ev.title)}</h3>
+                                    <span class="text-xs font-bold text-teal-600 bg-teal-50 px-3 py-1.5 rounded-xl border border-teal-200 whitespace-nowrap">詳細を見る</span>
                                 </div>
-                                <span class="text-xs font-bold text-teal-600 bg-teal-50 px-3 py-1.5 rounded-xl border border-teal-200 whitespace-nowrap">詳細を見る</span>
-                            </div>
-                        `;
+                            `;
+                        }
                     }
                 } else {
                     if (isDateInEventRange(dateStr, ev)) {
@@ -1311,7 +1420,9 @@
         function renderEventCardFull(ev) {
             const badgeStyle = categoryStyles[ev.category] || 'bg-slate-100 text-slate-800';
             const dateDisplay = formatEventDateDisplay(ev);
-            const statusBadge = ev.status === '対応済' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900';
+            const statusBtnBg = ev.status === '対応済' 
+                ? 'bg-emerald-100 hover:bg-emerald-200 text-emerald-800 border-emerald-300' 
+                : 'bg-amber-100 hover:bg-amber-200 text-amber-900 border-amber-300';
             const deadlineBadge = ev.isDeadline ? `<span class="text-xs font-bold px-2 py-0.5 rounded-xl bg-rose-50 text-rose-700 border border-rose-200">締切</span>` : '';
 
             return `
@@ -1319,15 +1430,18 @@
                     <div class="space-y-1">
                         <div class="flex items-center space-x-2 flex-wrap gap-y-1">
                             <span class="text-xs font-bold px-2.5 py-0.5 rounded-xl border ${badgeStyle}">${ev.category}</span>
-                            <span class="text-xs font-bold px-2.5 py-0.5 rounded-xl ${statusBadge}">${ev.status}</span>
+                            <span class="text-xs font-bold px-2.5 py-0.5 rounded-xl ${ev.status === '対応済' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900'}">${ev.status}</span>
                             ${deadlineBadge}
                             <span class="text-xs font-bold text-slate-600">${dateDisplay}</span>
                         </div>
                         <h3 class="text-base font-bold text-slate-800">${escapeHtml(ev.title)}</h3>
                         ${ev.memo ? `<p class="text-xs text-slate-600 line-clamp-1">${escapeHtml(ev.memo)}</p>` : ''}
                     </div>
-                    <div class="flex items-center space-x-2 w-full md:w-auto justify-end">
-                        <span class="text-xs font-bold text-teal-600 bg-teal-50 px-3 py-1.5 rounded-xl border border-teal-200 whitespace-nowrap">詳細を見る</span>
+                    <div class="flex items-center space-x-3 w-full md:w-auto justify-end">
+                        <button onclick="toggleEventStatus('${ev.id}', event)" class="px-4 py-2 rounded-xl text-xs font-bold border transition shadow-2xs whitespace-nowrap ${statusBtnBg}">
+                            ${ev.status === '対応済' ? '✓ 対応済 (未対応に戻す)' : '未対応 (対応済にする)'}
+                        </button>
+                        <span class="text-xs font-bold text-teal-600 bg-teal-50 px-3 py-2 rounded-xl border border-teal-200 whitespace-nowrap">詳細を見る</span>
                     </div>
                 </div>
             `;
@@ -1335,7 +1449,9 @@
 
         function renderAppCardFull(ev, labelText, badgeStyleClass) {
             const dateDisplay = formatEventDateDisplay(ev);
-            const statusBadge = ev.status === '対応済' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900';
+            const statusBtnBg = ev.status === '対応済' 
+                ? 'bg-emerald-100 hover:bg-emerald-200 text-emerald-800 border-emerald-300' 
+                : 'bg-amber-100 hover:bg-amber-200 text-amber-900 border-amber-300';
             const tagBg = labelText === '開始' ? 'bg-rose-600 text-white' : (labelText === '締切' ? 'bg-rose-700 text-white' : 'bg-amber-600 text-white');
 
             return `
@@ -1343,15 +1459,18 @@
                     <div class="space-y-1">
                         <div class="flex items-center space-x-2 flex-wrap gap-y-1">
                             <span class="text-xs font-bold px-2.5 py-0.5 rounded-xl border bg-rose-50 text-rose-900 border-rose-200">応募</span>
-                            <span class="text-xs font-bold px-2.5 py-0.5 rounded-xl ${statusBadge}">${ev.status}</span>
+                            <span class="text-xs font-bold px-2.5 py-0.5 rounded-xl ${ev.status === '対応済' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900'}">${ev.status}</span>
                             <span class="text-xs font-bold px-2 py-0.5 rounded-xl ${tagBg}">${labelText}</span>
                             <span class="text-xs font-bold text-slate-600">${dateDisplay}</span>
                         </div>
                         <h3 class="text-base font-bold text-slate-800">${escapeHtml(ev.title)}</h3>
                         ${ev.memo ? `<p class="text-xs text-slate-600 line-clamp-1">${escapeHtml(ev.memo)}</p>` : ''}
                     </div>
-                    <div class="flex items-center space-x-2 w-full md:w-auto justify-end">
-                        <span class="text-xs font-bold text-teal-600 bg-teal-50 px-3 py-1.5 rounded-xl border border-teal-200 whitespace-nowrap">詳細を見る</span>
+                    <div class="flex items-center space-x-3 w-full md:w-auto justify-end">
+                        <button onclick="toggleEventStatus('${ev.id}', event)" class="px-4 py-2 rounded-xl text-xs font-bold border transition shadow-2xs whitespace-nowrap ${statusBtnBg}">
+                            ${ev.status === '対応済' ? '✓ 対応済 (未対応に戻す)' : '未対応 (対応済にする)'}
+                        </button>
+                        <span class="text-xs font-bold text-teal-600 bg-teal-50 px-3 py-2 rounded-xl border border-teal-200 whitespace-nowrap">詳細を見る</span>
                     </div>
                 </div>
             `;
